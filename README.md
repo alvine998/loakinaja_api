@@ -23,6 +23,16 @@ npm run dev
 
 The server listens on port 4000 by default. It creates missing Sequelize tables at startup; it does not alter existing schemas. For an existing database, apply `migrations/001-listing-moderation.sql` before deploying this version so pending/rejected review fields and the longer referral column are available. New databases get the schema directly from the Sequelize models. Configure the R2 fields to enable image uploads; the rest of the API can run without R2 configured.
 
+### Seed demo data
+
+After configuring `.env` and creating the database, run:
+
+```bash
+npm run seed
+```
+
+The idempotent seed adds three demo users and four listings with active, pending, sold, and rejected states. Demo user emails are `nadia.demo@loakinaja.local`, `rizky.demo@loakinaja.local`, and `siti.demo@loakinaja.local`; all use password `DemoLoakin123!`. The script adds only its fixed demo records, does not reset existing records, and refuses to run when `NODE_ENV=production`.
+
 ## Endpoints
 
 All endpoints are prefixed with `/api`.
