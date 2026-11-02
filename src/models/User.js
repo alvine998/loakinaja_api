@@ -11,7 +11,7 @@ const User = sequelize.define('User', {
   passwordHash: { type: DataTypes.STRING(255), allowNull: false, field: 'password_hash' },
   tokens: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 3 },
   referralCode: { type: DataTypes.STRING(16), allowNull: false, unique: true, field: 'referral_code' },
-  referredBy: { type: DataTypes.STRING(16), allowNull: true, field: 'referred_by' },
+  referredBy: { type: DataTypes.UUID, allowNull: true, field: 'referred_by' },
 }, {
   tableName: 'users',
   defaultScope: { attributes: { exclude: ['passwordHash'] } },

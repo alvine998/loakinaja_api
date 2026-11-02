@@ -16,6 +16,10 @@ const env = {
   },
   jwtSecret: process.env.JWT_SECRET,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
+  admin: {
+    email: process.env.ADMIN_EMAIL?.trim().toLowerCase(),
+    password: process.env.ADMIN_PASSWORD,
+  },
   r2: {
     accountId: process.env.R2_ACCOUNT_ID,
     accessKeyId: process.env.R2_ACCESS_KEY_ID,
@@ -28,6 +32,9 @@ const env = {
 function validateEnv() {
   if (!env.jwtSecret || env.jwtSecret === 'replace-with-a-long-random-secret') {
     throw new Error('Set JWT_SECRET to a strong, unique secret in .env');
+  }
+  if (env.admin.password === 'replace-with-a-strong-admin-password') {
+    throw new Error('Set ADMIN_PASSWORD to a strong, unique password in .env');
   }
 }
 

@@ -2,6 +2,25 @@ const jwt = require('jsonwebtoken');
 const { env } = require('../config/env');
 const { User } = require('../models');
 
+async function requireAdmin(req, res, next) {
+  const authorization = req.get('authorization') || '';
+  const [scheme, token] = authorization.split(' ');
+  if (scheme !== 'Bearer' || !token) {
+    return res.status(401).json({ error: 'Admin authentication required' });
+  }
+
+  try {
+    const payload = jwt.verify(token, env.jwtSecret);
+    if (payload.role !== 'admin' || payload.email !== env.admin.email) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+    req.admin = { email: payload.email, role: payload.role };
+    return next();
+  } catch {
+    return res.status(401).json({ error: 'Invalid or expired admin token' });
+  }
+}
+
 async function requireAuth(req, res, next) {
   const authorization = req.get('authorization') || '';
   const [scheme, token] = authorization.split(' ');
@@ -20,4 +39,4 @@ async function requireAuth(req, res, next) {
   }
 }
 
-module.exports = { requireAuth };
+module.exports = { requireAuth, requireAdmin };

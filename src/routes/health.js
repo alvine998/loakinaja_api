@@ -1,15 +1,8 @@
 const express = require('express');
-const sequelize = require('../config/database');
+const { getHealth } = require('../controllers/healthController');
 
 const router = express.Router();
 
-router.get('/', async (req, res) => {
-  try {
-    await sequelize.authenticate();
-    return res.json({ status: 'ok', database: 'connected' });
-  } catch {
-    return res.status(503).json({ status: 'error', database: 'unavailable' });
-  }
-});
+router.get('/', getHealth);
 
 module.exports = router;

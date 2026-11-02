@@ -11,7 +11,8 @@ const Listing = sequelize.define('Listing', {
   description: { type: DataTypes.TEXT, allowNull: false },
   location: { type: DataTypes.STRING(160), allowNull: false },
   images: { type: DataTypes.JSON, allowNull: false, defaultValue: [] },
-  status: { type: DataTypes.ENUM('active', 'sold'), allowNull: false, defaultValue: 'active' },
+  status: { type: DataTypes.ENUM('pending', 'active', 'rejected', 'sold'), allowNull: false, defaultValue: 'pending' },
+  reviewReason: { type: DataTypes.STRING(500), allowNull: true, field: 'review_reason' },
 }, { tableName: 'listings' });
 
 module.exports = Listing;

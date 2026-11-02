@@ -6,6 +6,7 @@ const { env } = require('./config/env');
 const authRoutes = require('./routes/auth');
 const healthRoutes = require('./routes/health');
 const listingRoutes = require('./routes/listings');
+const adminRoutes = require('./routes/admin');
 const { notFound, errorHandler } = require('./middleware/errors');
 
 const app = express();
@@ -20,6 +21,7 @@ app.use('/api', rateLimit({ windowMs: 60 * 1000, limit: 120, standardHeaders: 'd
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/listings', listingRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
