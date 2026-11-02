@@ -37,7 +37,7 @@ router.post('/register', authLimiter, async (req, res, next) => {
     if (referralCode?.trim()) {
       const referrer = await User.findOne({ where: { referralCode: referralCode.trim().toUpperCase() } });
       if (!referrer) return res.status(400).json({ error: 'Referral code not found' });
-      referredBy = referrer.referralCode;
+      referredBy = referrer.id;
     }
 
     const user = await User.create({
