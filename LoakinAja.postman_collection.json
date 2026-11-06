@@ -1,0 +1,251 @@
+{
+  "info": {
+    "_postman_id": "6a8ea34b-3f0d-40b3-9b4a-25de6acef271",
+    "name": "LoakinAja API",
+    "description": "Runnable requests for the LoakinAja Express API. Set baseUrl to the API origin (default http://localhost:4000). Login/register requests save their bearer tokens automatically. Configure the external Mayar and Digiflazz integrations before using payment and PPOB requests.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:4000" },
+    { "key": "userToken", "value": "" },
+    { "key": "adminToken", "value": "" },
+    { "key": "listingId", "value": "replace-with-listing-id" },
+    { "key": "tokenOrderId", "value": "replace-with-token-order-id" },
+    { "key": "ppobOrderId", "value": "replace-with-ppob-order-id" },
+    { "key": "guestToken", "value": "" },
+    { "key": "adminId", "value": "replace-with-admin-id" },
+    { "key": "roleKey", "value": "support" },
+    { "key": "escrowAccountId", "value": "replace-with-escrow-account-id" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Check API and database health",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/health", "description": "Returns API and database connectivity status." }
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register user",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const body = pm.response.json();", "if (body.token) pm.collectionVariables.set('userToken', body.token);"] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Ayu\",\n  \"email\": \"ayu@example.com\",\n  \"phone\": \"+628123456789\",\n  \"password\": \"a-strong-password\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/api/auth/register", "description": "Creates a user. A successful response saves its JWT to userToken." }
+        },
+        {
+          "name": "Login user",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const body = pm.response.json();", "if (body.token) pm.collectionVariables.set('userToken', body.token);"] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"email\": \"ayu@example.com\",\n  \"password\": \"a-strong-password\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/api/auth/login", "description": "Login accepts email or phone in the email field. A successful response saves its JWT to userToken." }
+        },
+        {
+          "name": "Get current user",
+          "request": { "method": "GET", "header": [], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] }, "url": "{{baseUrl}}/api/auth/me" }
+        },
+        {
+          "name": "Update current user",
+          "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] }, "body": { "mode": "raw", "raw": "{\n  \"name\": \"Ayu Updated\",\n  \"email\": \"ayu@example.com\",\n  \"phone\": \"+628123456789\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/api/auth/me" }
+        },
+        {
+          "name": "Change password",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] }, "body": { "mode": "raw", "raw": "{\n  \"currentPassword\": \"a-strong-password\",\n  \"newPassword\": \"a-new-strong-password\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/api/auth/change-password" }
+        },
+        {
+          "name": "Get referral count",
+          "request": { "method": "GET", "header": [], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] }, "url": "{{baseUrl}}/api/auth/referral-count" }
+        }
+      ]
+    },
+    {
+      "name": "Listings",
+      "item": [
+        {
+          "name": "Browse listings",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/api/listings?page=1&limit=20&category=&q=", "host": ["{{baseUrl}}"], "path": ["api", "listings"], "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "20" }, { "key": "category", "value": "" }, { "key": "q", "value": "" }] } }
+        },
+        {
+          "name": "Get listing",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/listings/{{listingId}}" }
+        },
+        {
+          "name": "Get my listings",
+          "request": { "method": "GET", "header": [], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] }, "url": "{{baseUrl}}/api/listings/mine" }
+        },
+        {
+          "name": "Create listing (multipart; optional images)",
+          "request": { "method": "POST", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] }, "body": { "mode": "formdata", "formdata": [{ "key": "title", "value": "Vintage camera", "type": "text" }, { "key": "category", "value": "Elektronik", "type": "text" }, { "key": "price", "value": "1500000", "type": "text" }, { "key": "condition", "value": "Bekas - sangat baik", "type": "text" }, { "key": "description", "value": "Kondisi terawat dan berfungsi normal.", "type": "text" }, { "key": "location", "value": "Jakarta Selatan", "type": "text" }, { "key": "images", "type": "file", "src": [] }] }, "url": "{{baseUrl}}/api/listings", "description": "Images are optional; add up to five JPEG, PNG, or WebP files (max 5 MB each). Publishing consumes one token and creates a pending listing." }
+        },
+        {
+          "name": "Update listing",
+          "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] }, "body": { "mode": "raw", "raw": "{\n  \"title\": \"Vintage camera - updated\",\n  \"price\": 1450000\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/api/listings/{{listingId}}" }
+        },
+        {
+          "name": "Delete listing",
+          "request": { "method": "DELETE", "header": [], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] }, "url": "{{baseUrl}}/api/listings/{{listingId}}" }
+        }
+      ]
+    },
+    {
+      "name": "Token orders",
+      "item": [
+        {
+          "name": "Create token order",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const body = pm.response.json();", "if (body.order && body.order.id) pm.collectionVariables.set('tokenOrderId', body.order.id);"] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] }, "body": { "mode": "raw", "raw": "{\n  \"packageId\": \"starter\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/api/token-orders", "description": "Valid packageId values: starter, popular, pro. Requires Mayar configuration; saves the returned order id." }
+        },
+        {
+          "name": "Get token order",
+          "request": { "method": "GET", "header": [], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] }, "url": "{{baseUrl}}/api/token-orders/{{tokenOrderId}}" }
+        },
+        {
+          "name": "Verify token order payment",
+          "request": { "method": "POST", "header": [], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] }, "url": "{{baseUrl}}/api/token-orders/{{tokenOrderId}}/verify", "description": "Checks the transaction with Mayar and credits tokens only after a confirmed paid status." }
+        },
+        {
+          "name": "Mayar payment webhook (manual sample)",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"event\": \"payment.received\",\n  \"data\": {\n    \"transactionId\": \"replace-with-mayar-transaction-id\"\n  }\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/api/payments/mayar/webhook", "description": "For actual settlement, use Mayar's signed/configured webhook delivery; a manual request does not prove payment." }
+        }
+      ]
+    },
+    {
+      "name": "PPOB",
+      "item": [
+        {
+          "name": "List prepaid products",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/ppob/products?type=prepaid&search=", "description": "Load product catalog before creating a quote. type may be prepaid or postpaid; optional category and search filters are supported." }
+        },
+        {
+          "name": "List postpaid products",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/ppob/products?type=postpaid&search=" }
+        },
+        {
+          "name": "Create PPOB quote (signed-in user)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const body = pm.response.json();", "if (body.order && body.order.id) pm.collectionVariables.set('ppobOrderId', body.order.id);"] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] }, "body": { "mode": "raw", "raw": "{\n  \"type\": \"prepaid\",\n  \"productCode\": \"replace-with-product-code-from-catalog\",\n  \"customerNo\": \"081234567890\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/api/ppob/quotes", "description": "Use a currently available code from the product catalog; saves the order id." }
+        },
+        {
+          "name": "Create PPOB quote (guest)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const body = pm.response.json();", "if (body.order && body.order.id) pm.collectionVariables.set('ppobOrderId', body.order.id);", "if (body.guestToken) pm.collectionVariables.set('guestToken', body.guestToken);"] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"type\": \"prepaid\",\n  \"productCode\": \"replace-with-product-code-from-catalog\",\n  \"customerNo\": \"081234567890\",\n  \"buyerName\": \"Ayu\",\n  \"buyerEmail\": \"ayu@example.com\",\n  \"buyerPhone\": \"+628123456789\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/api/ppob/quotes", "description": "The response returns a one-time guestToken. Collection scripts store it in guestToken; use it for the guest routes." }
+        },
+        {
+          "name": "List my PPOB orders",
+          "request": { "method": "GET", "header": [], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] }, "url": "{{baseUrl}}/api/ppob/orders" }
+        },
+        {
+          "name": "Get PPOB order",
+          "request": { "method": "GET", "header": [], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] }, "url": "{{baseUrl}}/api/ppob/orders/{{ppobOrderId}}" }
+        },
+        {
+          "name": "Create payment for PPOB order",
+          "request": { "method": "POST", "header": [], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] }, "url": "{{baseUrl}}/api/ppob/orders/{{ppobOrderId}}/payment", "description": "Requires a valid unexpired quote and Mayar configuration." }
+        },
+        {
+          "name": "Verify PPOB payment and provider status",
+          "request": { "method": "POST", "header": [], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] }, "url": "{{baseUrl}}/api/ppob/orders/{{ppobOrderId}}/verify-payment", "description": "May verify payment with Mayar and submit/check the Digiflazz transaction." }
+        },
+        {
+          "name": "Get guest PPOB order",
+          "request": { "method": "GET", "header": [{ "key": "X-Guest-Order-Token", "value": "{{guestToken}}" }], "url": "{{baseUrl}}/api/ppob/guest-orders/{{ppobOrderId}}" }
+        },
+        {
+          "name": "Create payment for guest PPOB order",
+          "request": { "method": "POST", "header": [{ "key": "X-Guest-Order-Token", "value": "{{guestToken}}" }], "url": "{{baseUrl}}/api/ppob/guest-orders/{{ppobOrderId}}/payment" }
+        },
+        {
+          "name": "Verify guest PPOB payment and provider status",
+          "request": { "method": "POST", "header": [{ "key": "X-Guest-Order-Token", "value": "{{guestToken}}" }], "url": "{{baseUrl}}/api/ppob/guest-orders/{{ppobOrderId}}/verify-payment" }
+        },
+        {
+          "name": "Digiflazz webhook (manual sample)",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"data\": {\n    \"ref_id\": \"replace-with-order-reference\",\n    \"status\": \"Sukses\",\n    \"rc\": \"00\",\n    \"message\": \"Transaksi sukses\",\n    \"sn\": \"replace-with-serial-number\"\n  }\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/api/ppob/digiflazz-webhook", "description": "Configure the Digiflazz webhook secret/header according to the server configuration for a real provider delivery." }
+        }
+      ]
+    },
+    {
+      "name": "Escrow accounts",
+      "item": [
+        {
+          "name": "Get active escrow account",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/escrow-accounts/active" }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Admin login",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const body = pm.response.json();", "if (body.token) pm.collectionVariables.set('adminToken', body.token);"] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"replace-with-admin-password\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/api/admin/login", "description": "A successful response saves the 8-hour admin JWT to adminToken." }
+        },
+        {
+          "name": "Get admin session",
+          "request": { "method": "GET", "header": [], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] }, "url": "{{baseUrl}}/api/admin/session" }
+        },
+        {
+          "name": "Get admin dashboard",
+          "request": { "method": "GET", "header": [], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] }, "url": "{{baseUrl}}/api/admin/dashboard" }
+        },
+        {
+          "name": "Update admin profile",
+          "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] }, "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@example.com\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/api/admin/profile" }
+        },
+        {
+          "name": "List admins and roles",
+          "request": { "method": "GET", "header": [], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] }, "url": "{{baseUrl}}/api/admin/admins" }
+        },
+        {
+          "name": "Create admin",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] }, "body": { "mode": "raw", "raw": "{\n  \"email\": \"new-admin@example.com\",\n  \"password\": \"replace-with-password\",\n  \"role\": \"admin\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/api/admin/admins" }
+        },
+        {
+          "name": "Update admin",
+          "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] }, "body": { "mode": "raw", "raw": "{\n  \"email\": \"updated-admin@example.com\",\n  \"role\": \"support\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/api/admin/admins/{{adminId}}" }
+        },
+        {
+          "name": "Delete admin",
+          "request": { "method": "DELETE", "header": [], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] }, "url": "{{baseUrl}}/api/admin/admins/{{adminId}}" }
+        },
+        {
+          "name": "Create admin role",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] }, "body": { "mode": "raw", "raw": "{\n  \"key\": \"{{roleKey}}\",\n  \"label\": \"Support team\",\n  \"permissions\": [\"dashboard:view\"]\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/api/admin/roles" }
+        },
+        {
+          "name": "Update admin role",
+          "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] }, "body": { "mode": "raw", "raw": "{\n  \"label\": \"Support team\",\n  \"permissions\": [\"dashboard:view\"]\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/api/admin/roles/{{roleKey}}" }
+        },
+        {
+          "name": "Delete admin role",
+          "request": { "method": "DELETE", "header": [], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] }, "url": "{{baseUrl}}/api/admin/roles/{{roleKey}}" }
+        },
+        {
+          "name": "Review listing",
+          "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] }, "body": { "mode": "raw", "raw": "{\n  \"decision\": \"approve\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/api/admin/listings/{{listingId}}/review" }
+        },
+        {
+          "name": "Bulk review listings",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] }, "body": { "mode": "raw", "raw": "{\n  \"ids\": [\"{{listingId}}\"],\n  \"decision\": \"reject\",\n  \"reason\": \"Please provide clearer listing details.\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/api/admin/listings/review-bulk" }
+        },
+        {
+          "name": "List admin escrow accounts",
+          "request": { "method": "GET", "header": [], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] }, "url": "{{baseUrl}}/api/admin/escrow-accounts" }
+        },
+        {
+          "name": "Create escrow account",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] }, "body": { "mode": "raw", "raw": "{\n  \"bankName\": \"Bank Example\",\n  \"accountNumber\": \"1234567890\",\n  \"accountHolder\": \"PT LoakinAja\",\n  \"isActive\": true\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/api/admin/escrow-accounts" }
+        },
+        {
+          "name": "Update escrow account",
+          "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] }, "body": { "mode": "raw", "raw": "{\n  \"bankName\": \"Bank Example\",\n  \"accountNumber\": \"1234567890\",\n  \"accountHolder\": \"PT LoakinAja\",\n  \"isActive\": true\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/api/admin/escrow-accounts/{{escrowAccountId}}" }
+        },
+        {
+          "name": "Delete escrow account",
+          "request": { "method": "DELETE", "header": [], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] }, "url": "{{baseUrl}}/api/admin/escrow-accounts/{{escrowAccountId}}" }
+        }
+      ]
+    }
+  ]
+}

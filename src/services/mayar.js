@@ -53,8 +53,29 @@ async function createInvoice({ order, user, redirectUrl }) {
   });
 }
 
+async function createPpobInvoice({ order, user, redirectUrl }) {
+  const customer = user || {
+    name: order.buyerName,
+    email: order.buyerEmail,
+    phone: order.buyerPhone,
+  };
+  return mayarRequest('/invoices/create', {
+    method: 'POST',
+    body: JSON.stringify({
+      name: customer.name,
+      email: customer.email,
+      mobile: customer.phone,
+      description: `Pembayaran ${order.productName} (${order.refId})`,
+      redirectUrl,
+      expiredAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+      items: [{ quantity: 1, rate: order.amount, description: order.productName }],
+      extraData: { loakinajaPpobOrderId: order.id, providerRefId: order.refId },
+    }),
+  });
+}
+
 async function getTransaction(transactionId) {
   return mayarRequest(`/transactions/${encodeURIComponent(transactionId)}`);
 }
 
-module.exports = { createInvoice, getTransaction };
+module.exports = { createInvoice, createPpobInvoice, getTransaction };

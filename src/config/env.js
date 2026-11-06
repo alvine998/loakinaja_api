@@ -20,6 +20,14 @@ const env = {
     apiKey: process.env.MAYAR_API_KEY,
     baseUrl: (process.env.MAYAR_BASE_URL || 'https://api.mayar.id/hl/v2').replace(/\/$/, ''),
   },
+  digiflazz: {
+    username: process.env.DIGIFLAZZ_USERNAME,
+    apiKey: process.env.DIGIFLAZZ_API_KEY,
+    baseUrl: (process.env.DIGIFLAZZ_BASE_URL || 'https://api.digiflazz.com/v1').replace(/\/$/, ''),
+    webhookSecret: process.env.DIGIFLAZZ_WEBHOOK_SECRET,
+    testing: process.env.DIGIFLAZZ_TESTING === 'true',
+    markup: Number(process.env.PPOB_MARKUP_RUPIAH) || 1000,
+  },
   admin: {
     email: process.env.ADMIN_EMAIL?.trim().toLowerCase(),
     password: process.env.ADMIN_PASSWORD,

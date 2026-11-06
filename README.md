@@ -50,6 +50,16 @@ All endpoints are prefixed with `/api`.
 | GET | `/token-orders/:id` | Bearer token | Get the current user's token order |
 | POST | `/token-orders/:id/verify` | Bearer token | Verify the order against Mayar and credit paid tokens |
 | POST | `/payments/mayar/webhook` | Mayar webhook | Verify and settle a `payment.received` transaction |
+| GET | `/ppob/products?type=prepaid\|postpaid` | Public | Browse available Digiflazz products |
+| POST | `/ppob/quotes` | Optional Bearer token | Quote as a user or create a guest quote with buyer name, email, and phone |
+| GET | `/ppob/orders` | Bearer token | List the current user's PPOB orders |
+| GET | `/ppob/orders/:id` | Bearer token | Get a PPOB order status |
+| POST | `/ppob/orders/:id/payment` | Bearer token | Create Mayar invoice for a quoted PPOB order |
+| POST | `/ppob/orders/:id/verify-payment` | Bearer token | Verify Mayar payment and submit/check Digiflazz transaction |
+| GET | `/ppob/guest-orders/:id` | `X-Guest-Order-Token` | Read and verify a guest order |
+| POST | `/ppob/guest-orders/:id/payment` | `X-Guest-Order-Token` | Create Mayar invoice for a guest order |
+| POST | `/ppob/guest-orders/:id/verify-payment` | `X-Guest-Order-Token` | Verify guest payment and provider status |
+| POST | `/ppob/digiflazz-webhook` | Digiflazz webhook | Verify and update the provider transaction status |
 | GET | `/listings` | No | Browse active listings (`page`, `limit`, `category`, `q`) |
 | GET | `/listings/mine` | Bearer token | Get the authenticated user's listings |
 | GET | `/listings/:id` | No | Get one approved active or sold listing |
@@ -85,4 +95,5 @@ Send `Authorization: Bearer <token>` to protected routes. Admin login checks the
 - Set `WEB_ORIGIN` to the frontend origin. For multiple allowed origins, use a comma-separated list.
 - Never commit `.env` or production credentials.
 - Configure `MAYAR_API_KEY` with a Mayar Headless API key with Read & Write access. `MAYAR_BASE_URL` defaults to production (`https://api.mayar.id/hl/v2`); use `https://api.mayar.io/hl/v2` with a sandbox key for testing. Set the Mayar webhook URL in the Mayar dashboard to `https://<your-api-host>/api/payments/mayar/webhook`. Orders are verified against Mayar's authenticated transaction-detail endpoint before tokens are credited. Token-order tables are created by Sequelize on startup. The API deployment's `WEB_ORIGIN` must point to the frontend public URL so Mayar redirects customers back to the order status page.
+- Configure `DIGIFLAZZ_USERNAME`, `DIGIFLAZZ_API_KEY`, and optionally `DIGIFLAZZ_BASE_URL` / `DIGIFLAZZ_TESTING` for the Buyer API. Digiflazz price lists are cached for five minutes. Set the Digiflazz webhook URL to `https://<your-api-host>/api/ppob/digiflazz-webhook` and configure `DIGIFLAZZ_WEBHOOK_SECRET` to match the webhook secret in Digiflazz. Customer checkout uses Mayar; the provider purchase is only submitted after Mayar confirms payment. Add retail pricing via `PPOB_MARKUP_RUPIAH` (default Rp1,000). Register the existing Mayar webhook endpoint `https://<your-api-host>/api/payments/mayar/webhook`; it handles both token and PPOB order confirmations. Guests provide name, email, and phone with `/ppob/quotes`; its response returns a one-time random access token. Only the token hash is stored. Retain the token in browser session storage and send it as `X-Guest-Order-Token` for guest payment/status requests. Guest routes have dedicated rate limits. Startup migration makes existing PPOB orders guest-capable.
 - OTP password reset remains a local demo flow.

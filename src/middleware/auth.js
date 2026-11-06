@@ -57,4 +57,20 @@ async function requireAuth(req, res, next) {
   }
 }
 
-module.exports = { requireAuth, requireAdmin, requireAdminPermission };
+async function optionalAuth(req, res, next) {
+  const authorization = req.get('authorization') || '';
+  if (!authorization) return next();
+  const [scheme, token] = authorization.split(' ');
+  if (scheme !== 'Bearer' || !token) return res.status(401).json({ error: 'Invalid authorization header' });
+  try {
+    const payload = jwt.verify(token, env.jwtSecret);
+    const user = await User.findByPk(payload.sub);
+    if (!user) return res.status(401).json({ error: 'Invalid or expired token' });
+    req.user = user;
+    return next();
+  } catch {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+}
+
+module.exports = { requireAuth, optionalAuth, requireAdmin, requireAdminPermission };

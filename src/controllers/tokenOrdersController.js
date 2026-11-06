@@ -2,6 +2,7 @@ const sequelize = require('../config/database');
 const { env } = require('../config/env');
 const { TokenOrder, User } = require('../models');
 const mayar = require('../services/mayar');
+const ppobController = require('./ppobController');
 
 const PRICE_PER_TOKEN = 1000;
 const PACKAGES = {
@@ -136,7 +137,7 @@ async function webhook(req, res, next) {
     }
 
     const order = await TokenOrder.findOne({ where: { mayarTransactionId: transactionId } });
-    if (!order) return res.status(200).json({ received: true, ignored: true });
+    if (!order) return ppobController.mayarWebhook(req, res, next);
     await verifyMayarTransaction(order);
     return res.status(200).json({ received: true });
   } catch (error) {
