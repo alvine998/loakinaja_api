@@ -1,6 +1,6 @@
 const express = require('express');
 const { rateLimit } = require('express-rate-limit');
-const { requireAdmin } = require('../middleware/auth');
+const { requireAdmin, requireAdminPermission } = require('../middleware/auth');
 const adminController = require('../controllers/adminController');
 
 const router = express.Router();
@@ -13,7 +13,20 @@ const loginLimiter = rateLimit({
 
 router.post('/login', loginLimiter, adminController.login);
 router.get('/session', requireAdmin, adminController.getSession);
-router.get('/dashboard', requireAdmin, adminController.getDashboard);
-router.patch('/listings/:id/review', requireAdmin, adminController.reviewListing);
+router.get('/admins', requireAdmin, requireAdminPermission('admins:manage'), adminController.getAdmins);
+router.post('/roles', requireAdmin, requireAdminPermission('admins:manage'), adminController.createAdminRole);
+router.patch('/roles/:key', requireAdmin, requireAdminPermission('admins:manage'), adminController.updateAdminRole);
+router.delete('/roles/:key', requireAdmin, requireAdminPermission('admins:manage'), adminController.deleteAdminRole);
+router.post('/admins', requireAdmin, requireAdminPermission('admins:manage'), adminController.createAdmin);
+router.patch('/admins/:id', requireAdmin, requireAdminPermission('admins:manage'), adminController.updateAdmin);
+router.delete('/admins/:id', requireAdmin, requireAdminPermission('admins:manage'), adminController.deleteAdmin);
+router.patch('/profile', requireAdmin, requireAdminPermission('profile:manage'), adminController.updateAdminProfile);
+router.get('/dashboard', requireAdmin, requireAdminPermission('dashboard:view'), adminController.getDashboard);
+router.post('/listings/review-bulk', requireAdmin, requireAdminPermission('listings:review'), adminController.reviewListingsBulk);
+router.patch('/listings/:id/review', requireAdmin, requireAdminPermission('listings:review'), adminController.reviewListing);
+router.get('/escrow-accounts', requireAdmin, requireAdminPermission('escrow:manage'), adminController.getEscrowAccounts);
+router.post('/escrow-accounts', requireAdmin, requireAdminPermission('escrow:manage'), adminController.createEscrowAccount);
+router.patch('/escrow-accounts/:id', requireAdmin, requireAdminPermission('escrow:manage'), adminController.updateEscrowAccount);
+router.delete('/escrow-accounts/:id', requireAdmin, requireAdminPermission('escrow:manage'), adminController.deleteEscrowAccount);
 
 module.exports = router;

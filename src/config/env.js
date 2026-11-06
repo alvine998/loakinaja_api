@@ -16,6 +16,10 @@ const env = {
   },
   jwtSecret: process.env.JWT_SECRET,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
+  mayar: {
+    apiKey: process.env.MAYAR_API_KEY,
+    baseUrl: (process.env.MAYAR_BASE_URL || 'https://api.mayar.id/hl/v2').replace(/\/$/, ''),
+  },
   admin: {
     email: process.env.ADMIN_EMAIL?.trim().toLowerCase(),
     password: process.env.ADMIN_PASSWORD,
@@ -32,9 +36,6 @@ const env = {
 function validateEnv() {
   if (!env.jwtSecret || env.jwtSecret === 'replace-with-a-long-random-secret') {
     throw new Error('Set JWT_SECRET to a strong, unique secret in .env');
-  }
-  if (env.admin.password === 'replace-with-a-strong-admin-password') {
-    throw new Error('Set ADMIN_PASSWORD to a strong, unique password in .env');
   }
 }
 

@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const { env } = require('../config/env');
-const { User } = require('../models');
+const { Admin, AdminRole, User } = require('../models');
+const { DEFAULT_ROLES } = require('../config/adminRoles');
 
 async function requireAdmin(req, res, next) {
   const authorization = req.get('authorization') || '';
@@ -11,14 +12,31 @@ async function requireAdmin(req, res, next) {
 
   try {
     const payload = jwt.verify(token, env.jwtSecret);
-    if (payload.role !== 'admin' || payload.email !== env.admin.email) {
+    if (payload.role !== 'admin' || typeof payload.sub !== 'string') {
       return res.status(403).json({ error: 'Admin access required' });
     }
-    req.admin = { email: payload.email, role: payload.role };
+    const admin = await Admin.findByPk(payload.sub);
+    if (!admin || admin.email !== payload.email) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+    const role = await AdminRole.findByPk(admin.role);
+    const permissions = role?.permissions || (admin.role === 'super_admin'
+      ? DEFAULT_ROLES[0].permissions
+      : DEFAULT_ROLES.find((item) => item.key === admin.role)?.permissions || []);
+    req.admin = { id: admin.id, email: admin.email, role: admin.role, permissions };
     return next();
   } catch {
     return res.status(401).json({ error: 'Invalid or expired admin token' });
   }
+}
+
+function requireAdminPermission(permission) {
+  return (req, res, next) => {
+    if (!req.admin?.permissions?.includes(permission)) {
+      return res.status(403).json({ error: 'You do not have permission to perform this action' });
+    }
+    return next();
+  };
 }
 
 async function requireAuth(req, res, next) {
@@ -39,4 +57,4 @@ async function requireAuth(req, res, next) {
   }
 }
 
-module.exports = { requireAuth, requireAdmin };
+module.exports = { requireAuth, requireAdmin, requireAdminPermission };

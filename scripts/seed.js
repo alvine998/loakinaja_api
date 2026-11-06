@@ -1,8 +1,16 @@
 const bcrypt = require('bcryptjs');
 const sequelize = require('../src/config/database');
-const { User, Listing } = require('../src/models');
+const { Admin, User, Listing } = require('../src/models');
+const { ensureAdminRolesSchema } = require('./lib/adminRolesMigration');
 
 const demoPassword = 'DemoLoakin123!';
+const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+const adminPassword = process.env.ADMIN_PASSWORD;
+const demoAdmins = [
+  { email: 'admin.demo@loakinaja.local', role: 'admin' },
+  { email: 'finance.demo@loakinaja.local', role: 'finance' },
+  { email: 'support.demo@loakinaja.local', role: 'support' },
+];
 
 const users = [
   {
@@ -89,8 +97,28 @@ async function seed() {
 
   await sequelize.authenticate();
   await sequelize.sync();
+  await ensureAdminRolesSchema(sequelize);
+
+  if (!adminEmail || !adminPassword || adminPassword === 'replace-with-a-strong-admin-password') {
+    throw new Error('Set ADMIN_EMAIL and a strong ADMIN_PASSWORD in .env before seeding');
+  }
+
+  const adminPasswordHash = await bcrypt.hash(adminPassword, 12);
+  const [, createdAdmin] = await Admin.findOrCreate({
+    where: { email: adminEmail },
+    defaults: { email: adminEmail, passwordHash: adminPasswordHash, role: 'super_admin' },
+  });
+  if (!createdAdmin) await Admin.update({ role: 'super_admin' }, { where: { email: adminEmail, role: 'admin' } });
 
   const passwordHash = await bcrypt.hash(demoPassword, 12);
+  let createdRoleAdmins = 0;
+  for (const demoAdmin of demoAdmins) {
+    const [, created] = await Admin.findOrCreate({
+      where: { email: demoAdmin.email },
+      defaults: { ...demoAdmin, passwordHash },
+    });
+    if (created) createdRoleAdmins += 1;
+  }
   let createdUsers = 0;
   let createdListings = 0;
 
@@ -110,7 +138,10 @@ async function seed() {
     if (created) createdListings += 1;
   }
 
-  console.log(`Demo seed complete: ${createdUsers} users and ${createdListings} listings created.`);
+  console.log(`Seed complete: ${createdAdmin ? '1 super admin' : '0 super admins'}, ${createdRoleAdmins} role admins, ${createdUsers} demo users, and ${createdListings} listings created.`);
+  console.log(`Admin account email: ${adminEmail}`);
+  console.log('Admin password: the value configured as ADMIN_PASSWORD in .env');
+  console.log(`Demo role admins (password ${demoPassword}): ${demoAdmins.map(({ email, role }) => `${email} [${role}]`).join(', ')}`);
   console.log(`Demo account password: ${demoPassword}`);
   console.log('Demo users: nadia.demo@loakinaja.local, rizky.demo@loakinaja.local, siti.demo@loakinaja.local');
 }

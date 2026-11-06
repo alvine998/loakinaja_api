@@ -9,7 +9,8 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "check": "node --check src/server.js && node --check src/app.js",
-    "seed": "node scripts/seed.js"
+    "seed": "node scripts/seed.js",
+    "migrate:admin-roles": "node scripts/migrate-admin-roles.js"
   },
   "engines": {
     "node": ">=20"

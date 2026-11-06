@@ -15,13 +15,13 @@ npm install
 cp .env.example .env
 ```
 
-Set `DB_*` and a strong `JWT_SECRET` in `.env`, then start the API:
+Set `DB_*`, a strong `JWT_SECRET`, and the initial admin email/password in `.env`. Run the seed command once to create the admin record, then start the API:
 
 ```bash
 npm run dev
 ```
 
-The server listens on port 4000 by default. It creates missing Sequelize tables at startup; it does not alter existing schemas. For an existing database, apply `migrations/001-listing-moderation.sql` before deploying this version so pending/rejected review fields and the longer referral column are available. New databases get the schema directly from the Sequelize models. Configure the R2 fields to enable image uploads; the rest of the API can run without R2 configured.
+The server listens on port 4000 by default. It creates missing Sequelize tables at startup and ensures the admin RBAC role column exists before accepting requests. On existing databases it also promotes the earliest admin to `super_admin` when no super admin exists. For an existing database, apply `migrations/001-listing-moderation.sql` before deploying this version. `npm run seed` and `npm run migrate:admin-roles` also ensure the RBAC role schema. New databases get the schema directly from the Sequelize models. Configure the R2 fields to enable image uploads; the rest of the API can run without R2 configured.
 
 ### Seed demo data
 
@@ -31,7 +31,7 @@ After configuring `.env` and creating the database, run:
 npm run seed
 ```
 
-The idempotent seed adds three demo users and four listings with active, pending, sold, and rejected states. Demo user emails are `nadia.demo@loakinaja.local`, `rizky.demo@loakinaja.local`, and `siti.demo@loakinaja.local`; all use password `DemoLoakin123!`. The script adds only its fixed demo records, does not reset existing records, and refuses to run when `NODE_ENV=production`.
+The idempotent seed creates default RBAC roles, a `super_admin` using `ADMIN_EMAIL` and `ADMIN_PASSWORD`, plus demo `admin`, `finance`, and `support` accounts. It also adds three demo users and four listings with active, pending, sold, and rejected states. Seeded role-account emails are `admin.demo@loakinaja.local`, `finance.demo@loakinaja.local`, and `support.demo@loakinaja.local`; their shared password is `DemoLoakin123!`. Demo user emails are `nadia.demo@loakinaja.local`, `rizky.demo@loakinaja.local`, and `siti.demo@loakinaja.local`, all using the same demo password. Admin passwords are stored as bcrypt hashes in the `admins` table. The script adds only its fixed records, does not reset or update existing role accounts, and refuses to run when `NODE_ENV=production`.
 
 ## Endpoints
 
@@ -46,6 +46,10 @@ All endpoints are prefixed with `/api`.
 | PATCH | `/auth/me` | Bearer token | Update name, email, and phone |
 | POST | `/auth/change-password` | Bearer token | Change account password |
 | GET | `/auth/referral-count` | Bearer token | Get referral count |
+| POST | `/token-orders` | Bearer token | Create a Mayar invoice for a token package |
+| GET | `/token-orders/:id` | Bearer token | Get the current user's token order |
+| POST | `/token-orders/:id/verify` | Bearer token | Verify the order against Mayar and credit paid tokens |
+| POST | `/payments/mayar/webhook` | Mayar webhook | Verify and settle a `payment.received` transaction |
 | GET | `/listings` | No | Browse active listings (`page`, `limit`, `category`, `q`) |
 | GET | `/listings/mine` | Bearer token | Get the authenticated user's listings |
 | GET | `/listings/:id` | No | Get one approved active or sold listing |
@@ -54,6 +58,11 @@ All endpoints are prefixed with `/api`.
 | DELETE | `/listings/:id` | Bearer token | Delete own listing |
 | POST | `/admin/login` | No | Admin login; returns an 8-hour admin JWT |
 | GET | `/admin/session` | Admin bearer token | Validate admin session |
+| GET/POST | `/admin/admins` | `admins:manage` | List or create admins with assigned roles |
+| PATCH/DELETE | `/admin/admins/:id` | `admins:manage` | Change another admin's email, password, or role; delete admin |
+| POST | `/admin/roles` | `admins:manage` | Create an RBAC role and assign permissions |
+| PATCH/DELETE | `/admin/roles/:key` | `admins:manage` | Update or delete a role (assigned roles cannot be deleted) |
+| PATCH | `/admin/profile` | Admin bearer token | Update own email or password |
 | GET | `/admin/dashboard` | Admin bearer token | Get users and all listings |
 | PATCH | `/admin/listings/:id/review` | Admin bearer token | Approve or reject a pending listing |
 
@@ -68,11 +77,12 @@ Example registration:
 }
 ```
 
-Send `Authorization: Bearer <token>` to protected routes. Configure `ADMIN_EMAIL` and `ADMIN_PASSWORD` in the API `.env` for admin login; a bcrypt hash is also accepted for the password. The admin JWT expires after 8 hours. New listings are pending review and hidden from public browse/detail routes until approved. Image uploads accept JPEG, PNG, or WebP up to 5 MB per image. R2 bucket objects need public read access (or a configured public custom domain) for returned image URLs to load. Publishing a listing deducts one token in the same transaction as creating it.
+Send `Authorization: Bearer <token>` to protected routes. Admin login checks the bcrypt password hash in the `admins` table; `ADMIN_EMAIL` and `ADMIN_PASSWORD` are only used to create the initial `super_admin` when running the seed. Admin roles are `super_admin`, `admin`, `finance`, and `support`; their permissions are enforced by the API on every request and reflected in dashboard navigation. The admin JWT expires after 8 hours. New listings are pending review and hidden from public browse/detail routes until approved. Image uploads accept JPEG, PNG, or WebP up to 5 MB per image. R2 bucket objects need public read access (or a configured public custom domain) for returned image URLs to load. Publishing a listing deducts one token in the same transaction as creating it.
 
 ## Notes
 
 - Passwords are stored as bcrypt hashes; API responses never include password hashes.
 - Set `WEB_ORIGIN` to the frontend origin. For multiple allowed origins, use a comma-separated list.
 - Never commit `.env` or production credentials.
-- This starter does not implement OTP password reset or payment processing yet.
+- Configure `MAYAR_API_KEY` with a Mayar Headless API key with Read & Write access. `MAYAR_BASE_URL` defaults to production (`https://api.mayar.id/hl/v2`); use `https://api.mayar.io/hl/v2` with a sandbox key for testing. Set the Mayar webhook URL in the Mayar dashboard to `https://<your-api-host>/api/payments/mayar/webhook`. Orders are verified against Mayar's authenticated transaction-detail endpoint before tokens are credited. Token-order tables are created by Sequelize on startup. The API deployment's `WEB_ORIGIN` must point to the frontend public URL so Mayar redirects customers back to the order status page.
+- OTP password reset remains a local demo flow.

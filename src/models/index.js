@@ -1,7 +1,16 @@
 const User = require('./User');
 const Listing = require('./Listing');
+const Admin = require('./Admin');
+const AdminRole = require('./AdminRole');
+const EscrowAccount = require('./EscrowAccount');
+const TokenOrder = require('./TokenOrder');
 
 User.hasMany(Listing, { as: 'listings', foreignKey: 'userId', onDelete: 'CASCADE' });
 Listing.belongsTo(User, { as: 'seller', foreignKey: 'userId' });
+User.hasMany(TokenOrder, { as: 'tokenOrders', foreignKey: 'userId', onDelete: 'CASCADE' });
+TokenOrder.belongsTo(User, { as: 'user', foreignKey: 'userId' });
 
-module.exports = { User, Listing };
+Admin.belongsTo(AdminRole, { foreignKey: 'role', targetKey: 'key', as: 'adminRole', constraints: false });
+AdminRole.hasMany(Admin, { foreignKey: 'role', sourceKey: 'key', as: 'admins', constraints: false });
+
+module.exports = { User, Listing, Admin, AdminRole, EscrowAccount, TokenOrder };
