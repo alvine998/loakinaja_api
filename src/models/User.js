@@ -12,6 +12,7 @@ const User = sequelize.define('User', {
   tokens: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 3 },
   referralCode: { type: DataTypes.STRING(16), allowNull: false, unique: true, field: 'referral_code' },
   referredBy: { type: DataTypes.UUID, allowNull: true, field: 'referred_by' },
+  isGoogleLogin: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false, field: 'is_google_login' },
 }, {
   tableName: 'users',
   defaultScope: { attributes: { exclude: ['passwordHash'] } },

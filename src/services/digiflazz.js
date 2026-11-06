@@ -13,6 +13,16 @@ function signature(value) {
   return createHash('md5').update(`${env.digiflazz.username}${env.digiflazz.apiKey}${value}`).digest('hex');
 }
 
+function providerErrorMessage(payload, fallback) {
+  const data = payload?.data;
+  const message = typeof data?.message === 'string'
+    ? data.message
+    : typeof payload?.message === 'string' ? payload.message : '';
+  const code = typeof data?.rc === 'string' ? data.rc : typeof payload?.rc === 'string' ? payload.rc : '';
+  const details = [code, message].filter(Boolean).join(': ');
+  return details ? `${fallback} (${details})` : fallback;
+}
+
 async function request(path, body) {
   ensureConfigured();
   let response;
@@ -31,7 +41,7 @@ async function request(path, body) {
 
   const payload = await response.json().catch(() => null);
   if (!response.ok || !payload?.data) {
-    const error = new Error('Digiflazz could not process the request');
+    const error = new Error(providerErrorMessage(payload, 'Digiflazz could not process the request'));
     error.status = response.status === 429 ? 503 : 502;
     throw error;
   }
@@ -39,11 +49,19 @@ async function request(path, body) {
 }
 
 async function getPriceList(type) {
-  return request('/price-list', {
+  const products = await request('/price-list', {
     cmd: type === 'postpaid' ? 'pasca' : 'prepaid',
     username: env.digiflazz.username,
     sign: signature('pricelist'),
   });
+
+  if (!Array.isArray(products)) {
+    const error = new Error(providerErrorMessage(products, 'Digiflazz returned an invalid price list'));
+    error.status = 502;
+    throw error;
+  }
+
+  return products;
 }
 
 async function inquiryPln(customerNo) {

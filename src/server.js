@@ -4,6 +4,9 @@ const { env, validateEnv } = require('./config/env');
 require('./models');
 const { ensureAdminRolesSchema } = require('../scripts/lib/adminRolesMigration');
 const { ensurePpobGuestSchema } = require('../scripts/lib/ppobGuestMigration');
+const { ensurePpobCatalogSchema } = require('../scripts/lib/ppobCatalogMigration');
+const { ensureGoogleLoginSchema } = require('../scripts/lib/googleLoginMigration');
+const ppobCatalog = require('./services/ppobCatalog');
 
 async function start() {
   validateEnv();
@@ -15,6 +18,9 @@ async function start() {
   await sequelize.sync();
   // Existing installs need the RBAC column before any admin login/session queries run.
   await ensureAdminRolesSchema(sequelize);
+  await ensurePpobCatalogSchema(sequelize);
+  await ensureGoogleLoginSchema(sequelize);
+  await ppobCatalog.start();
 
   const server = app.listen(env.port, () => {
     console.log(`LoakinAja API listening on http://localhost:${env.port}`);

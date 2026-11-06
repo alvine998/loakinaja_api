@@ -5,6 +5,7 @@ const AdminRole = require('./AdminRole');
 const EscrowAccount = require('./EscrowAccount');
 const TokenOrder = require('./TokenOrder');
 const PpobOrder = require('./PpobOrder');
+const PpobCatalog = require('./PpobCatalog');
 
 User.hasMany(Listing, { as: 'listings', foreignKey: 'userId', onDelete: 'CASCADE' });
 Listing.belongsTo(User, { as: 'seller', foreignKey: 'userId' });
@@ -16,4 +17,4 @@ PpobOrder.belongsTo(User, { as: 'user', foreignKey: 'userId' });
 Admin.belongsTo(AdminRole, { foreignKey: 'role', targetKey: 'key', as: 'adminRole', constraints: false });
 AdminRole.hasMany(Admin, { foreignKey: 'role', sourceKey: 'key', as: 'admins', constraints: false });
 
-module.exports = { User, Listing, Admin, AdminRole, EscrowAccount, TokenOrder, PpobOrder };
+module.exports = { User, Listing, Admin, AdminRole, EscrowAccount, TokenOrder, PpobOrder, PpobCatalog };

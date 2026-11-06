@@ -3,23 +3,12 @@ const sequelize = require('../config/database');
 const { env } = require('../config/env');
 const { PpobOrder } = require('../models');
 const digiflazz = require('../services/digiflazz');
+const ppobCatalog = require('../services/ppobCatalog');
 const mayar = require('../services/mayar');
 
-const priceCache = new Map();
-const CACHE_TTL_MS = 5 * 60 * 1000;
-
 async function getCachedProducts(type) {
-  const now = Date.now();
-  let products = priceCache.get(type);
-  if (!products || products.expiresAt <= now) {
-    const response = await digiflazz.getPriceList(type);
-    products = {
-      expiresAt: now + CACHE_TTL_MS,
-      data: response.map((item) => publicProduct(item, type)),
-    };
-    priceCache.set(type, products);
-  }
-  return products;
+  const response = await ppobCatalog.getProducts(type);
+  return { data: response.map((item) => publicProduct(item, type)) };
 }
 
 function publicProduct(product, type) {
