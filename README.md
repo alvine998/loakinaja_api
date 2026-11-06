@@ -46,6 +46,11 @@ All endpoints are prefixed with `/api`.
 | POST | `/categories` | Admin with `categories:manage` | Create a product category and icon |
 | PATCH | `/categories/:id` | Admin with `categories:manage` | Rename a category, updating its listings, or change its icon |
 | DELETE | `/categories/:id` | Admin with `categories:manage` | Delete an unused category |
+| GET | `/listings?q=<search>` | No | Search active listings by title for product suggestions |
+| GET | `/favorites` | Bearer token | List the current user's active favorite listings |
+| GET | `/favorites/:listingId` | Bearer token | Check whether a listing is favorited |
+| POST | `/favorites/:listingId` | Bearer token | Add an active listing to favorites |
+| DELETE | `/favorites/:listingId` | Bearer token | Remove a listing from favorites |
 
 Product categories are stored in MySQL and seeded with the existing default categories on API startup. Admins can add categories using any supported Lucide icon name; listing submission accepts only active category names.
 | POST | `/auth/register` | No | Create an account and return a JWT |

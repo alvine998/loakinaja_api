@@ -2,6 +2,8 @@ const express = require('express');
 const { rateLimit } = require('express-rate-limit');
 const { requireAdmin, requireAdminPermission } = require('../middleware/auth');
 const adminController = require('../controllers/adminController');
+const withdrawalsController = require('../controllers/withdrawalsController');
+const escrowSalesController = require('../controllers/escrowSalesController');
 
 const router = express.Router();
 const loginLimiter = rateLimit({
@@ -30,5 +32,9 @@ router.patch('/escrow-accounts/:id', requireAdmin, requireAdminPermission('escro
 router.delete('/escrow-accounts/:id', requireAdmin, requireAdminPermission('escrow:manage'), adminController.deleteEscrowAccount);
 router.get('/ppob-settings', requireAdmin, requireAdminPermission('ppob:manage'), adminController.getPpobSettings);
 router.patch('/ppob-settings', requireAdmin, requireAdminPermission('ppob:manage'), adminController.updatePpobSettings);
+router.get('/withdrawals', requireAdmin, requireAdminPermission('finance:view'), withdrawalsController.listAllWithdrawals);
+router.patch('/withdrawals/:id', requireAdmin, requireAdminPermission('finance:view'), withdrawalsController.processWithdrawal);
+router.get('/escrow-sales', requireAdmin, requireAdminPermission('finance:view'), escrowSalesController.listAllSales);
+router.patch('/escrow-sales/:id', requireAdmin, requireAdminPermission('finance:view'), escrowSalesController.processPayment);
 
 module.exports = router;
