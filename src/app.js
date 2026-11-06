@@ -17,6 +17,7 @@ const categoriesRoutes = require('./routes/categories');
 const favoritesRoutes = require('./routes/favorites');
 const escrowSalesRoutes = require('./routes/escrowSales');
 const withdrawalsRoutes = require('./routes/withdrawals');
+const chatsRoutes = require('./routes/chats');
 const { notFound, errorHandler } = require('./middleware/errors');
 
 const app = express();
@@ -34,6 +35,7 @@ app.use('/api/categories', categoriesRoutes);
 app.use('/api/favorites', favoritesRoutes);
 app.use('/api/escrow-sales', escrowSalesRoutes);
 app.use('/api/withdrawals', withdrawalsRoutes);
+app.use('/api/chats', chatsRoutes);
 app.use('/api/auth', authRoutes);
 app.post('/api/payments/mayar/webhook', tokenOrdersController.webhook);
 app.post('/api/ppob/digiflazz-webhook', ppobController.digiflazzWebhook);
