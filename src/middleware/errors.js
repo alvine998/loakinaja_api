@@ -18,6 +18,7 @@ function errorHandler(error, req, res, next) {
     return res.status(415).json({ error: error.message });
   }
   if (error.status && error.status >= 400 && error.status < 600) {
+    if (Number.isFinite(error.retryAfterSeconds)) res.set('Retry-After', String(error.retryAfterSeconds));
     return res.status(error.status).json({ error: error.message });
   }
   if (error instanceof SyntaxError && error.status === 400 && 'body' in error) {

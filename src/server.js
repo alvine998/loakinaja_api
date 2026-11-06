@@ -6,7 +6,10 @@ const { ensureAdminRolesSchema } = require('../scripts/lib/adminRolesMigration')
 const { ensurePpobGuestSchema } = require('../scripts/lib/ppobGuestMigration');
 const { ensurePpobCatalogSchema } = require('../scripts/lib/ppobCatalogMigration');
 const { ensureGoogleLoginSchema } = require('../scripts/lib/googleLoginMigration');
+const { ensureProfilePhotoSchema } = require('../scripts/lib/profilePhotoMigration');
+const { ensurePpobSettingsSchema } = require('../scripts/lib/ppobSettingsMigration');
 const ppobCatalog = require('./services/ppobCatalog');
+const redis = require('./services/redis');
 
 async function start() {
   validateEnv();
@@ -20,6 +23,8 @@ async function start() {
   await ensureAdminRolesSchema(sequelize);
   await ensurePpobCatalogSchema(sequelize);
   await ensureGoogleLoginSchema(sequelize);
+  await ensureProfilePhotoSchema(sequelize);
+  await ensurePpobSettingsSchema();
   await ppobCatalog.start();
 
   const server = app.listen(env.port, () => {
@@ -28,6 +33,7 @@ async function start() {
 
   const shutdown = async () => {
     server.close(async () => {
+      await redis.close();
       await sequelize.close();
       process.exit(0);
     });

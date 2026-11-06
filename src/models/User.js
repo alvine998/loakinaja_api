@@ -8,6 +8,7 @@ const User = sequelize.define('User', {
     this.setDataValue('email', value.trim().toLowerCase());
   } },
   phone: { type: DataTypes.STRING(32), allowNull: false },
+  profilePhoto: { type: DataTypes.STRING(2048), allowNull: true, field: 'profile_photo' },
   passwordHash: { type: DataTypes.STRING(255), allowNull: false, field: 'password_hash' },
   tokens: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 3 },
   referralCode: { type: DataTypes.STRING(16), allowNull: false, unique: true, field: 'referral_code' },

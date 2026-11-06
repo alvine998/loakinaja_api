@@ -9,14 +9,14 @@ const extensionByType = {
   'image/webp': 'webp',
 };
 
-async function uploadImage(file) {
+async function uploadImage(file, folder = 'listings') {
   if (!isConfigured) {
     const error = new Error('Image storage is not configured');
     error.status = 503;
     throw error;
   }
 
-  const key = `listings/${randomUUID()}.${extensionByType[file.mimetype]}`;
+  const key = `${folder}/${randomUUID()}.${extensionByType[file.mimetype]}`;
   await r2.send(new PutObjectCommand({
     Bucket: env.r2.bucketName,
     Key: key,

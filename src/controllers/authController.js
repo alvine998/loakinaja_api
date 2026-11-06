@@ -4,6 +4,7 @@ const { randomBytes } = require("node:crypto");
 const { Op } = require("sequelize");
 const { env } = require("../config/env");
 const { User } = require("../models");
+const { uploadImage } = require("../services/imageStorage");
 
 function publicUser(user) {
   const {
@@ -11,6 +12,7 @@ function publicUser(user) {
     name,
     email,
     phone,
+    profilePhoto,
     tokens,
     referralCode,
     referredBy,
@@ -21,6 +23,7 @@ function publicUser(user) {
     name,
     email,
     phone,
+    profilePhoto,
     tokens,
     referralCode,
     referredBy,
@@ -240,6 +243,19 @@ async function updateCurrentUser(req, res, next) {
   }
 }
 
+async function updateProfilePhoto(req, res, next) {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "A profile photo is required" });
+    }
+    const profilePhoto = await uploadImage(req.file, "profiles");
+    await req.user.update({ profilePhoto });
+    return res.json({ user: publicUser(req.user) });
+  } catch (error) {
+    return next(error);
+  }
+}
+
 async function changePassword(req, res, next) {
   try {
     const { currentPassword, newPassword } = req.body || {};
@@ -283,6 +299,7 @@ module.exports = {
   login,
   getCurrentUser,
   updateCurrentUser,
+  updateProfilePhoto,
   changePassword,
   getReferralCount,
 };

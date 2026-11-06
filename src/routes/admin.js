@@ -28,5 +28,7 @@ router.get('/escrow-accounts', requireAdmin, requireAdminPermission('escrow:mana
 router.post('/escrow-accounts', requireAdmin, requireAdminPermission('escrow:manage'), adminController.createEscrowAccount);
 router.patch('/escrow-accounts/:id', requireAdmin, requireAdminPermission('escrow:manage'), adminController.updateEscrowAccount);
 router.delete('/escrow-accounts/:id', requireAdmin, requireAdminPermission('escrow:manage'), adminController.deleteEscrowAccount);
+router.get('/ppob-settings', requireAdmin, requireAdminPermission('ppob:manage'), adminController.getPpobSettings);
+router.patch('/ppob-settings', requireAdmin, requireAdminPermission('ppob:manage'), adminController.updatePpobSettings);
 
 module.exports = router;

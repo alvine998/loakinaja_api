@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { env } = require('../config/env');
-const { Admin, AdminRole, EscrowAccount, Listing, User } = require('../models');
+const { Admin, AdminRole, EscrowAccount, Listing, PpobSetting, User } = require('../models');
 const sequelize = require('../config/database');
 const { Op } = require('sequelize');
 const { isConfigured: isR2Configured } = require('../config/storage');
@@ -338,4 +338,30 @@ async function deleteEscrowAccount(req, res, next) {
   }
 }
 
-module.exports = { login, getSession, getAdmins, createAdmin, updateAdmin, deleteAdmin, createAdminRole, updateAdminRole, deleteAdminRole, updateAdminProfile, getDashboard, reviewListing, reviewListingsBulk, getEscrowAccounts, getActiveEscrowAccount, createEscrowAccount, updateEscrowAccount, deleteEscrowAccount };
+async function getPpobSettings(req, res, next) {
+  try {
+    const setting = await PpobSetting.findByPk('markup_rupiah');
+    return res.json({ data: { markupRupiah: Number(setting?.value ?? env.digiflazz.markup) } });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function updatePpobSettings(req, res, next) {
+  try {
+    const markupRupiah = req.body?.markupRupiah;
+    if (!Number.isSafeInteger(markupRupiah) || markupRupiah < 0 || markupRupiah > 10000000) {
+      return res.status(400).json({ error: 'markupRupiah must be a whole number from 0 to 10000000' });
+    }
+    const [setting] = await PpobSetting.findOrCreate({
+      where: { key: 'markup_rupiah' },
+      defaults: { value: markupRupiah },
+    });
+    if (setting.value !== markupRupiah) await setting.update({ value: markupRupiah });
+    return res.json({ data: { markupRupiah: Number(setting.value) } });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+module.exports = { login, getSession, getAdmins, createAdmin, updateAdmin, deleteAdmin, createAdminRole, updateAdminRole, deleteAdminRole, updateAdminProfile, getDashboard, reviewListing, reviewListingsBulk, getEscrowAccounts, getActiveEscrowAccount, createEscrowAccount, updateEscrowAccount, deleteEscrowAccount, getPpobSettings, updatePpobSettings };

@@ -19,6 +19,9 @@ const env = {
     password: process.env.DB_PASSWORD || '',
     logging: process.env.DB_LOG_SQL === 'true',
   },
+  redis: {
+    url: process.env.REDIS_URL,
+  },
   jwtSecret: process.env.JWT_SECRET,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   mayar: {
@@ -32,6 +35,7 @@ const env = {
     webhookSecret: process.env.DIGIFLAZZ_WEBHOOK_SECRET,
     testing: process.env.DIGIFLAZZ_TESTING === 'true',
     markup: Number(process.env.PPOB_MARKUP_RUPIAH) || 1000,
+    minRequestIntervalMs: Number(process.env.DIGIFLAZZ_MIN_REQUEST_INTERVAL_MS) || 1000,
   },
   admin: {
     email: process.env.ADMIN_EMAIL?.trim().toLowerCase(),

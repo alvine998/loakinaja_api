@@ -1,5 +1,6 @@
 const { createHash, createHmac, timingSafeEqual } = require('node:crypto');
 const { env } = require('../config/env');
+const rateLimit = require('./digiflazzRateLimit');
 
 function ensureConfigured() {
   if (!env.digiflazz.username || !env.digiflazz.apiKey) {
@@ -25,6 +26,7 @@ function providerErrorMessage(payload, fallback) {
 
 async function request(path, body) {
   ensureConfigured();
+  await rateLimit.waitForSlot();
   let response;
   try {
     response = await fetch(`${env.digiflazz.baseUrl}${path}`, {
@@ -43,6 +45,11 @@ async function request(path, body) {
   if (!response.ok || !payload?.data) {
     const error = new Error(providerErrorMessage(payload, 'Digiflazz could not process the request'));
     error.status = response.status === 429 ? 503 : 502;
+    if (response.status === 429) {
+      const retryAfter = response.headers.get('retry-after');
+      const cooldownMs = await rateLimit.deferAfterRateLimit(retryAfter);
+      error.retryAfterSeconds = Math.ceil(cooldownMs / 1000);
+    }
     throw error;
   }
   return payload.data;

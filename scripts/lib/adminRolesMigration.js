@@ -17,6 +17,13 @@ async function ensureAdminRolesSchema(sequelize) {
     );
   }
 
+  for (const roleKey of ['super_admin', 'admin', 'finance']) {
+    await sequelize.query(
+      'UPDATE `admin_roles` SET `permissions` = JSON_ARRAY_APPEND(`permissions`, "$", ?) WHERE `key` = ? AND JSON_CONTAINS(`permissions`, JSON_QUOTE(?)) = 0',
+      { replacements: ['ppob:manage', roleKey, 'ppob:manage'] },
+    );
+  }
+
   const [[existingSuperAdmin]] = await sequelize.query("SELECT `id` FROM `admins` WHERE `role` = 'super_admin' LIMIT 1");
   if (!existingSuperAdmin) {
     await sequelize.query("UPDATE `admins` SET `role` = 'super_admin' ORDER BY `created_at` ASC LIMIT 1");

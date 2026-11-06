@@ -3,18 +3,19 @@ const sequelize = require('../config/database');
 const { env } = require('../config/env');
 const { PpobOrder } = require('../models');
 const digiflazz = require('../services/digiflazz');
+const ppobPricing = require('../services/ppobPricing');
 const ppobCatalog = require('../services/ppobCatalog');
 const mayar = require('../services/mayar');
 
 async function getCachedProducts(type) {
   const response = await ppobCatalog.getProducts(type);
-  return { data: response.map((item) => publicProduct(item, type)) };
+  const markup = await ppobPricing.getMarkup();
+  return { data: response.map((item) => publicProduct(item, type, markup)) };
 }
 
-function publicProduct(product, type) {
+function publicProduct(product, type, markup) {
   const providerPrice = Number(product.price || 0);
   const fee = Number(product.admin || 0);
-  const markup = Math.max(0, env.digiflazz.markup);
   return {
     code: product.buyer_sku_code,
     name: product.product_name,
@@ -96,7 +97,16 @@ function hasOrderAccess(order, req) {
 async function getProducts(req, res, next) {
   try {
     const type = req.query.type === 'postpaid' ? 'postpaid' : 'prepaid';
-    const products = await getCachedProducts(type);
+    let products;
+    try {
+      products = await getCachedProducts(type);
+    } catch (catalogError) {
+      if (catalogError.code !== 'PPOB_CATALOG_REFRESHING') throw catalogError;
+      void ppobCatalog.refreshStaleCatalogs().catch((refreshError) => {
+        console.error('Unable to refresh PPOB catalog after an empty-cache request:', refreshError.message);
+      });
+      return res.json({ data: [], categories: [], refreshing: true, retryAfterSeconds: catalogError.retryAfterSeconds || 3 });
+    }
 
     const category = typeof req.query.category === 'string' ? req.query.category.toLowerCase() : '';
     const search = typeof req.query.search === 'string' ? req.query.search.trim().toLowerCase() : '';
@@ -167,6 +177,7 @@ async function createQuote(req, res, next) {
     }
 
     const guestToken = req.user ? null : randomBytes(32).toString('base64url');
+    const markup = await ppobPricing.getMarkup();
     const order = await PpobOrder.create({
       userId: req.user?.id || null,
       type,
@@ -178,7 +189,7 @@ async function createQuote(req, res, next) {
       refId,
       status: 'quoted',
       providerPrice,
-      amount: customerAmount + Math.max(0, env.digiflazz.markup),
+      amount: customerAmount + markup,
       quoteData,
       quoteExpiresAt: new Date(Date.now() + 15 * 60 * 1000),
       guestAccessTokenHash: guestToken ? hashGuestToken(guestToken) : null,
@@ -257,7 +268,7 @@ async function executeProviderOrder(orderId) {
       command: result.order.type === 'postpaid'
         ? (result.isStatusCheck ? 'status-pasca' : 'pay-pasca')
         : undefined,
-      maxPrice: result.order.providerPrice,
+      maxPrice: result.order.amount,
     });
     const status = statusFromDigiflazz(response.status);
     await result.order.update({
