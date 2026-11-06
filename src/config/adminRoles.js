@@ -10,6 +10,7 @@ const PERMISSIONS = [
   'escrow:manage',
   'admins:manage',
   'profile:manage',
+  'categories:manage',
 ];
 
 const DEFAULT_ROLES = [

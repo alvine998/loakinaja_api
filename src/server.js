@@ -8,6 +8,7 @@ const { ensurePpobCatalogSchema } = require('../scripts/lib/ppobCatalogMigration
 const { ensureGoogleLoginSchema } = require('../scripts/lib/googleLoginMigration');
 const { ensureProfilePhotoSchema } = require('../scripts/lib/profilePhotoMigration');
 const { ensurePpobSettingsSchema } = require('../scripts/lib/ppobSettingsMigration');
+const { ensureCategories } = require('../scripts/lib/categoriesMigration');
 const ppobCatalog = require('./services/ppobCatalog');
 const redis = require('./services/redis');
 
@@ -25,6 +26,7 @@ async function start() {
   await ensureGoogleLoginSchema(sequelize);
   await ensureProfilePhotoSchema(sequelize);
   await ensurePpobSettingsSchema();
+  await ensureCategories(sequelize);
   await ppobCatalog.start();
 
   const server = app.listen(env.port, () => {

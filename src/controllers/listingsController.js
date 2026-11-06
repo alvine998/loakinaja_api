@@ -1,6 +1,6 @@
 const { Op } = require('sequelize');
 const sequelize = require('../config/database');
-const { Listing, User } = require('../models');
+const { Category, Listing, User } = require('../models');
 const { uploadImage } = require('../services/imageStorage');
 
 async function getMyListings(req, res, next) {
@@ -56,6 +56,9 @@ async function createListing(req, res, next) {
     if (![title, category, condition, description, location].every((value) => typeof value === 'string' && value.trim())) {
       return res.status(400).json({ error: 'title, category, condition, description, and location are required' });
     }
+    if (!await Category.findOne({ where: { name: category.trim() } })) {
+      return res.status(400).json({ error: 'category must be an active product category' });
+    }
     const numericPrice = Number(price);
     if (!Number.isSafeInteger(numericPrice) || numericPrice < 0) {
       return res.status(400).json({ error: 'price must be a non-negative integer' });
@@ -100,6 +103,12 @@ async function updateListing(req, res, next) {
     const allowed = ['title', 'category', 'price', 'condition', 'description', 'location', 'status'];
     const updates = {};
     for (const field of allowed) if (req.body?.[field] !== undefined) updates[field] = req.body[field];
+    if (updates.category !== undefined) {
+      if (typeof updates.category !== 'string' || !await Category.findOne({ where: { name: updates.category.trim() } })) {
+        return res.status(400).json({ error: 'category must be an active product category' });
+      }
+      updates.category = updates.category.trim();
+    }
     if (updates.status !== undefined && updates.status !== 'sold') {
       return res.status(400).json({ error: 'Only active listings can be marked sold by the owner' });
     }

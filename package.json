@@ -9,6 +9,7 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "check": "node --check src/server.js && node --check src/app.js",
+    "regions:sync": "node scripts/sync-regions.js",
     "seed": "node scripts/seed.js",
     "migrate:admin-roles": "node scripts/migrate-admin-roles.js"
   },

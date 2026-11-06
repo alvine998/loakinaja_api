@@ -12,6 +12,8 @@ const tokenOrderRoutes = require('./routes/tokenOrders');
 const tokenOrdersController = require('./controllers/tokenOrdersController');
 const ppobController = require('./controllers/ppobController');
 const ppobRoutes = require('./routes/ppob');
+const regionsRoutes = require('./routes/regions');
+const categoriesRoutes = require('./routes/categories');
 const { notFound, errorHandler } = require('./middleware/errors');
 
 const app = express();
@@ -24,6 +26,8 @@ app.use(express.urlencoded({ extended: false, limit: '1mb' }));
 app.use('/api', rateLimit({ windowMs: 60 * 1000, limit: 120, standardHeaders: 'draft-8', legacyHeaders: false }));
 
 app.use('/api/health', healthRoutes);
+app.use('/api/regions', regionsRoutes);
+app.use('/api/categories', categoriesRoutes);
 app.use('/api/auth', authRoutes);
 app.post('/api/payments/mayar/webhook', tokenOrdersController.webhook);
 app.post('/api/ppob/digiflazz-webhook', ppobController.digiflazzWebhook);
