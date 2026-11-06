@@ -9,6 +9,7 @@ const { ensureGoogleLoginSchema } = require('../scripts/lib/googleLoginMigration
 const { ensureProfilePhotoSchema } = require('../scripts/lib/profilePhotoMigration');
 const { ensurePpobSettingsSchema } = require('../scripts/lib/ppobSettingsMigration');
 const { ensureCategories } = require('../scripts/lib/categoriesMigration');
+const { ensureEscrowSalesSchema } = require('../scripts/lib/escrowSalesMigration');
 const ppobCatalog = require('./services/ppobCatalog');
 const redis = require('./services/redis');
 
@@ -20,6 +21,7 @@ async function start() {
   await ensurePpobGuestSchema(sequelize);
   // Creates missing tables for a fresh install. Use migrations for production schema changes.
   await sequelize.sync();
+  await ensureEscrowSalesSchema(sequelize);
   // Existing installs need the RBAC column before any admin login/session queries run.
   await ensureAdminRolesSchema(sequelize);
   await ensurePpobCatalogSchema(sequelize);

@@ -47,12 +47,38 @@ All endpoints are prefixed with `/api`.
 | PATCH | `/categories/:id` | Admin with `categories:manage` | Rename a category, updating its listings, or change its icon |
 | DELETE | `/categories/:id` | Admin with `categories:manage` | Delete an unused category |
 | GET | `/listings?q=<search>` | No | Search active listings by title for product suggestions |
+| POST | `/escrow-sales` | Bearer token | Start a Rekening Bersama sale for an active listing |
+| GET | `/escrow-sales` | Bearer token | List the current user's escrow purchases and sales |
+| GET | `/escrow-sales/:id` | Buyer or seller | Get a Rekening Bersama transaction |
+| POST | `/escrow-sales/:id/submit-payment` | Buyer | Submit a manual bank-transfer confirmation for admin verification |
+| POST | `/escrow-sales/:id/confirm-delivery` | Buyer | Request release after confirming delivery |
+| GET | `/withdrawals` | Bearer token | Get seller's available released balance and withdrawal history |
+| POST | `/withdrawals` | Bearer token | Request a manual payout (minimum Rp 10,000) |
+| GET | `/admin/escrow-sales` | Admin with `finance:view` | Review Rekening Bersama payments and release requests |
+| PATCH | `/admin/escrow-sales/:id` | Admin with `finance:view` | Verify payment, cancel an unpaid sale, or release funds after delivery confirmation |
+| GET | `/admin/withdrawals` | Admin with `finance:view` | Review seller withdrawals |
+| PATCH | `/admin/withdrawals/:id` | Admin with `finance:view` | Mark withdrawal paid or reject it and restore seller balance |
+| POST | `/escrow-sales` | Bearer token | Start a Rekening Bersama sale for an active listing |
+| GET | `/escrow-sales` | Bearer token | List the current user's escrow purchases and sales |
+| GET | `/escrow-sales/:id` | Buyer or seller | Get a Rekening Bersama transaction |
+| POST | `/escrow-sales/:id/submit-payment` | Buyer | Submit a manual bank-transfer confirmation for admin verification |
+| POST | `/escrow-sales/:id/confirm-delivery` | Buyer | Request release after confirming delivery |
+| GET | `/withdrawals` | Bearer token | Get seller's available released balance and withdrawal history |
+| POST | `/withdrawals` | Bearer token | Request a manual payout (minimum Rp 10,000) |
+| GET | `/admin/escrow-sales` | Admin with `finance:view` | Review Rekening Bersama payments and release requests |
+| PATCH | `/admin/escrow-sales/:id` | Admin with `finance:view` | Verify payment, cancel an unpaid sale, or release funds after delivery confirmation |
+| GET | `/admin/withdrawals` | Admin with `finance:view` | Review seller withdrawals |
+| PATCH | `/admin/withdrawals/:id` | Admin with `finance:view` | Mark withdrawal paid or reject it and restore seller balance |
 | GET | `/favorites` | Bearer token | List the current user's active favorite listings |
 | GET | `/favorites/:listingId` | Bearer token | Check whether a listing is favorited |
 | POST | `/favorites/:listingId` | Bearer token | Add an active listing to favorites |
 | DELETE | `/favorites/:listingId` | Bearer token | Remove a listing from favorites |
 
 Product categories are stored in MySQL and seeded with the existing default categories on API startup. Admins can add categories using any supported Lucide icon name; listing submission accepts only active category names.
+
+Rekening Bersama seller balances only increase after admin confirms escrow receipt and then releases the sale after buyer delivery confirmation. Bank transfers and withdrawals are manually verified/processed by admins; there is no payment gateway integration for these flows. A listing marked sold manually does not create a withdrawable balance.
+
+Rekening Bersama seller balances only increase after admin confirms escrow receipt and then releases the sale after buyer delivery confirmation. Bank transfers and withdrawals are manually verified/processed by admins; the application does not yet have a payment gateway integration for these flows. A listing marked sold manually does not create a withdrawable balance.
 | POST | `/auth/register` | No | Create an account and return a JWT |
 | POST | `/auth/login` | No | Verify credentials and return a JWT |
 | GET | `/auth/me` | Bearer token | Get the current account |

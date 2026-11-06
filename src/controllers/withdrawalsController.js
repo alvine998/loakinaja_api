@@ -1,4 +1,4 @@
-const { Withdrawal, SellerBalance } = require('../models');
+const { User, Withdrawal, SellerBalance } = require('../models');
 const sequelize = require('../config/database');
 
 const MINIMUM_WITHDRAWAL = 10000;
@@ -39,8 +39,23 @@ async function requestWithdrawal(req, res, next) {
 
 async function listAllWithdrawals(req, res, next) {
   try {
-    const data = await Withdrawal.findAll({ order: [['createdAt', 'DESC']] });
+    const data = await Withdrawal.findAll({
+      include: [{ model: User, as: 'user', attributes: ['id', 'name', 'email'] }],
+      order: [['createdAt', 'DESC']],
+    });
     return res.json({ data });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function listAllBalances(req, res, next) {
+  try {
+    const balances = await SellerBalance.findAll({
+      include: [{ model: User, as: 'user', attributes: ['id', 'name', 'email', 'phone'] }],
+      order: [['availableAmount', 'DESC']],
+    });
+    return res.json({ data: balances });
   } catch (error) {
     return next(error);
   }
@@ -68,4 +83,4 @@ async function processWithdrawal(req, res, next) {
   }
 }
 
-module.exports = { getBalance, requestWithdrawal, listAllWithdrawals, processWithdrawal };
+module.exports = { getBalance, requestWithdrawal, listAllWithdrawals, listAllBalances, processWithdrawal };

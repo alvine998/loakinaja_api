@@ -33,6 +33,7 @@ router.delete('/escrow-accounts/:id', requireAdmin, requireAdminPermission('escr
 router.get('/ppob-settings', requireAdmin, requireAdminPermission('ppob:manage'), adminController.getPpobSettings);
 router.patch('/ppob-settings', requireAdmin, requireAdminPermission('ppob:manage'), adminController.updatePpobSettings);
 router.get('/withdrawals', requireAdmin, requireAdminPermission('finance:view'), withdrawalsController.listAllWithdrawals);
+router.get('/seller-balances', requireAdmin, requireAdminPermission('finance:view'), withdrawalsController.listAllBalances);
 router.patch('/withdrawals/:id', requireAdmin, requireAdminPermission('finance:view'), withdrawalsController.processWithdrawal);
 router.get('/escrow-sales', requireAdmin, requireAdminPermission('finance:view'), escrowSalesController.listAllSales);
 router.patch('/escrow-sales/:id', requireAdmin, requireAdminPermission('finance:view'), escrowSalesController.processPayment);
