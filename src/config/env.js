@@ -24,6 +24,10 @@ const env = {
   },
   jwtSecret: process.env.JWT_SECRET,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
+  email: {
+    resendApiKey: process.env.RESEND_API_KEY,
+    from: process.env.EMAIL_FROM,
+  },
   mayar: {
     apiKey: process.env.MAYAR_API_KEY,
     baseUrl: (process.env.MAYAR_BASE_URL || 'https://api.mayar.id/hl/v2').replace(/\/$/, ''),

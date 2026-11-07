@@ -15,6 +15,7 @@ const SellerBalance = require('./SellerBalance');
 const Withdrawal = require('./Withdrawal');
 const ChatConversation = require('./ChatConversation');
 const ChatMessage = require('./ChatMessage');
+const WithdrawalOtp = require('./WithdrawalOtp');
 
 User.hasMany(Listing, { as: 'listings', foreignKey: 'userId', onDelete: 'CASCADE' });
 Listing.belongsTo(User, { as: 'seller', foreignKey: 'userId' });
@@ -41,6 +42,8 @@ ChatConversation.hasMany(ChatMessage, { as: 'messages', foreignKey: 'conversatio
 ChatMessage.belongsTo(ChatConversation, { as: 'conversation', foreignKey: 'conversationId' });
 User.hasMany(ChatMessage, { as: 'sentChatMessages', foreignKey: 'senderId' });
 ChatMessage.belongsTo(User, { as: 'sender', foreignKey: 'senderId' });
+User.hasMany(WithdrawalOtp, { as: 'withdrawalOtps', foreignKey: 'userId', onDelete: 'CASCADE' });
+WithdrawalOtp.belongsTo(User, { as: 'user', foreignKey: 'userId' });
 User.hasMany(TokenOrder, { as: 'tokenOrders', foreignKey: 'userId', onDelete: 'CASCADE' });
 TokenOrder.belongsTo(User, { as: 'user', foreignKey: 'userId' });
 User.hasMany(PpobOrder, { as: 'ppobOrders', foreignKey: 'userId', onDelete: 'CASCADE' });
@@ -49,4 +52,4 @@ PpobOrder.belongsTo(User, { as: 'user', foreignKey: 'userId' });
 Admin.belongsTo(AdminRole, { foreignKey: 'role', targetKey: 'key', as: 'adminRole', constraints: false });
 AdminRole.hasMany(Admin, { foreignKey: 'role', sourceKey: 'key', as: 'admins', constraints: false });
 
-module.exports = { User, Listing, Admin, AdminRole, EscrowAccount, TokenOrder, PpobOrder, PpobCatalog, PpobSetting, Region, Category, Favorite, EscrowSale, SellerBalance, Withdrawal, ChatConversation, ChatMessage };
+module.exports = { User, Listing, Admin, AdminRole, EscrowAccount, TokenOrder, PpobOrder, PpobCatalog, PpobSetting, Region, Category, Favorite, EscrowSale, SellerBalance, Withdrawal, ChatConversation, ChatMessage, WithdrawalOtp };
