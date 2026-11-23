@@ -28,9 +28,10 @@ const env = {
     resendApiKey: process.env.RESEND_API_KEY,
     from: process.env.EMAIL_FROM,
   },
-  mayar: {
-    apiKey: process.env.MAYAR_API_KEY,
-    baseUrl: (process.env.MAYAR_BASE_URL || 'https://api.mayar.id/hl/v2').replace(/\/$/, ''),
+  ipaymu: {
+    va: process.env.IPAYMU_VA,
+    apiKey: process.env.IPAYMU_API_KEY,
+    baseUrl: (process.env.IPAYMU_BASE_URL || 'https://my.ipaymu.com/api/v2').replace(/\/$/, ''),
   },
   digiflazz: {
     username: process.env.DIGIFLAZZ_USERNAME,

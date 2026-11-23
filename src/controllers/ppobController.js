@@ -1,11 +1,12 @@
 const { createHash, randomBytes, randomUUID, timingSafeEqual } = require('node:crypto');
+const { Op } = require('sequelize');
 const sequelize = require('../config/database');
 const { env } = require('../config/env');
 const { PpobOrder } = require('../models');
 const digiflazz = require('../services/digiflazz');
 const ppobPricing = require('../services/ppobPricing');
 const ppobCatalog = require('../services/ppobCatalog');
-const mayar = require('../services/mayar');
+const ipaymu = require('../services/ipaymu');
 
 async function getCachedProducts(type) {
   const response = await ppobCatalog.getProducts(type);
@@ -226,19 +227,26 @@ async function startPayment(req, res, next) {
     }
 
     const origin = (env.webOrigin || `${req.protocol}://${req.get('host')}`).split(',')[0].trim();
-    const redirectUrl = `${origin}/ppob/return?order=${encodeURIComponent(order.id)}`;
-    const invoiceResult = await mayar.createPpobInvoice({ order, user: req.user || null, redirectUrl });
-    const invoice = invoiceResult?.data;
-    if (!invoice?.id || !invoice?.transactionId || !invoice?.link) {
-      const error = new Error('Mayar returned an incomplete invoice response');
+    const returnUrl = `${origin}/ppob/return?order=${encodeURIComponent(order.id)}`;
+    const cancelUrl = returnUrl;
+    const notifyUrl = `${env.apiPublicUrl}/api/payments/ipaymu/webhook`;
+    const paymentResult = await ipaymu.createPpobPayment({
+      order,
+      user: req.user || null,
+      returnUrl,
+      cancelUrl,
+      notifyUrl,
+    });
+    const data = paymentResult?.Data;
+    if (!data?.SessionID || !data?.Url) {
+      const error = new Error('iPaymu returned an incomplete payment response');
       error.status = 502;
       throw error;
     }
     await order.update({
       status: 'awaiting_payment',
-      mayarInvoiceId: invoice.id,
-      mayarTransactionId: invoice.transactionId,
-      paymentUrl: invoice.link,
+      ipaymuSessionId: String(data.SessionID),
+      paymentUrl: data.Url,
     });
     return res.status(201).json({ order: serializeOrder(order) });
   } catch (error) {
@@ -291,28 +299,37 @@ async function verifyPayment(req, res, next) {
   try {
     let order = await PpobOrder.findByPk(req.params.id);
     if (!order || !hasOrderAccess(order, req)) return res.status(404).json({ error: 'PPOB order not found' });
-    order = await verifyAndProcess(order);
+    const candidateTrxId = req.body?.trx_id || req.body?.transactionId || req.query?.trx_id || null;
+    order = await verifyAndProcess(order, candidateTrxId);
     return res.json({ order: serializeOrder(order) });
   } catch (error) {
     return next(error);
   }
 }
 
-async function verifyAndProcess(order) {
-  if (order.mayarTransactionId && !order.paidAt) {
-    const result = await mayar.getTransaction(order.mayarTransactionId);
-    const transaction = result?.data;
-    if (transaction?.id === order.mayarTransactionId
-      && Number(transaction.amount) === order.amount
-      && String(transaction.status).toLowerCase() === 'paid') {
-      const [claimed] = await PpobOrder.update({ paidAt: new Date() }, {
-        where: { id: order.id, paidAt: null, status: 'awaiting_payment' },
-      });
-      if (claimed) order = await executeProviderOrder(order.id);
-      else order = await PpobOrder.findByPk(order.id);
+async function verifyAndProcess(order, candidateTransactionId = null) {
+  const transactionId = order.ipaymuTransactionId || (candidateTransactionId ? String(candidateTransactionId).trim() : '');
+  if (transactionId && !order.paidAt) {
+    const result = await ipaymu.getTransaction(transactionId);
+    const transaction = result?.Data;
+    const referenceMatches = !transaction?.ReferenceId || String(transaction.ReferenceId) === String(order.id);
+    if (transaction && referenceMatches && Number(transaction.Amount) === order.amount) {
+      const resolvedTrxId = String(transaction.TransactionId || transactionId);
+      if (!order.ipaymuTransactionId && resolvedTrxId) {
+        await order.update({ ipaymuTransactionId: resolvedTrxId }).catch(() => {});
+      }
+      if (ipaymu.isTransactionPaid(transaction)) {
+        const [claimed] = await PpobOrder.update({ paidAt: new Date() }, {
+          where: { id: order.id, paidAt: null, status: 'awaiting_payment' },
+        });
+        if (claimed) order = await executeProviderOrder(order.id);
+        else order = await PpobOrder.findByPk(order.id);
+      } else if (ipaymu.isTransactionExpired(transaction) && order.status === 'awaiting_payment') {
+        await order.update({ status: 'expired' });
+      }
     }
   } else if (order.paidAt && ['awaiting_payment', 'pending'].includes(order.status)) {
-      order = await executeProviderOrder(order.id);
+    order = await executeProviderOrder(order.id);
   }
   return order;
 }
@@ -347,18 +364,28 @@ async function getGuestOrder(req, res, next) {
   }
 }
 
-async function mayarWebhook(req, res, next) {
+async function ipaymuWebhook(req, res, next) {
   try {
     const payload = req.body || {};
-    const data = payload.data || {};
-    if (payload.event !== 'payment.received') return res.status(200).json({ received: true, ignored: true });
-    const order = await PpobOrder.findOne({ where: { mayarTransactionId: data.transactionId || data.id } });
+    if (!ipaymu.isValidWebhook(payload, req.get('x-signature'))) {
+      return res.status(401).json({ error: 'Invalid iPaymu webhook signature' });
+    }
+    const trxId = payload.trx_id ? String(payload.trx_id).trim() : '';
+    const referenceId = payload.reference_id ? String(payload.reference_id).trim() : '';
+    const sid = payload.sid ? String(payload.sid).trim() : '';
+    const lookupConditions = [];
+    if (referenceId) lookupConditions.push({ id: referenceId });
+    if (sid) lookupConditions.push({ ipaymuSessionId: sid });
+    if (trxId) lookupConditions.push({ ipaymuTransactionId: trxId });
+    if (!lookupConditions.length) return res.status(200).json({ received: true, ignored: true });
+
+    const order = await PpobOrder.findOne({ where: { [Op.or]: lookupConditions } });
     if (!order) return res.status(200).json({ received: true, ignored: true });
     try {
-      await verifyAndProcess(order);
+      await verifyAndProcess(order, trxId);
     } catch (error) {
       console.error(`Unable to process paid PPOB order ${order.id}:`, error.message);
-      // Mayar should receive a 2xx for its delivery. Guest and signed-in
+      // iPaymu should receive a 2xx for its delivery. Guest and signed-in
       // order-status requests can safely retry the idempotent processing path.
     }
     return res.status(200).json({ received: true });
@@ -400,4 +427,4 @@ async function digiflazzWebhook(req, res, next) {
   }
 }
 
-module.exports = { getProducts, createQuote, startPayment, verifyPayment, getOrder, getGuestOrder, listOrders, mayarWebhook, digiflazzWebhook };
+module.exports = { getProducts, createQuote, startPayment, verifyPayment, getOrder, getGuestOrder, listOrders, ipaymuWebhook, digiflazzWebhook };

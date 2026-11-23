@@ -37,7 +37,7 @@ app.use('/api/escrow-sales', escrowSalesRoutes);
 app.use('/api/withdrawals', withdrawalsRoutes);
 app.use('/api/chats', chatsRoutes);
 app.use('/api/auth', authRoutes);
-app.post('/api/payments/mayar/webhook', tokenOrdersController.webhook);
+app.post('/api/payments/ipaymu/webhook', tokenOrdersController.webhook);
 app.post('/api/ppob/digiflazz-webhook', ppobController.digiflazzWebhook);
 app.use('/api/token-orders', tokenOrderRoutes);
 app.use('/api/ppob', ppobRoutes);

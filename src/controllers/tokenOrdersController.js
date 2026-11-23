@@ -1,7 +1,8 @@
+const { Op } = require('sequelize');
 const sequelize = require('../config/database');
 const { env } = require('../config/env');
 const { TokenOrder, User } = require('../models');
-const mayar = require('../services/mayar');
+const ipaymu = require('../services/ipaymu');
 const ppobController = require('./ppobController');
 
 const PRICE_PER_TOKEN = 1000;
@@ -46,21 +47,36 @@ async function settlePaidOrder(orderId, transaction) {
   return order;
 }
 
-async function verifyMayarTransaction(order) {
-  if (!order.mayarTransactionId) return order;
-  const result = await mayar.getTransaction(order.mayarTransactionId);
-  const transaction = result?.data;
-  if (!transaction || transaction.id !== order.mayarTransactionId) return order;
-  if (Number(transaction.amount) !== order.amount) {
-    console.error(`Mayar amount mismatch for token order ${order.id}`);
+async function verifyIpaymuTransaction(order, candidateTransactionId = null) {
+  const transactionId = order.ipaymuTransactionId || (candidateTransactionId ? String(candidateTransactionId).trim() : '');
+  if (!transactionId) {
+    if (order.status === 'pending' && order.expiresAt <= new Date()) {
+      await order.update({ status: 'expired' });
+    }
     return order;
   }
 
-  const status = String(transaction.status || '').toLowerCase();
-  if (status === 'paid') {
+  const result = await ipaymu.getTransaction(transactionId);
+  const transaction = result?.Data;
+  if (!transaction) return order;
+  if (transaction.ReferenceId && String(transaction.ReferenceId) !== String(order.id)) {
+    console.error(`iPaymu reference mismatch for token order ${order.id}`);
+    return order;
+  }
+  if (Number(transaction.Amount) !== order.amount) {
+    console.error(`iPaymu amount mismatch for token order ${order.id}`);
+    return order;
+  }
+
+  const resolvedTrxId = String(transaction.TransactionId || transactionId);
+  if (!order.ipaymuTransactionId && resolvedTrxId) {
+    await order.update({ ipaymuTransactionId: resolvedTrxId }).catch(() => {});
+  }
+
+  if (ipaymu.isTransactionPaid(transaction)) {
     return sequelize.transaction((dbTransaction) => settlePaidOrder(order.id, dbTransaction));
   }
-  if (status === 'expired' && order.status === 'pending') {
+  if (ipaymu.isTransactionExpired(transaction) && order.status === 'pending') {
     await order.update({ status: 'expired' });
   }
   return order;
@@ -83,22 +99,28 @@ async function create(req, res, next) {
       expiresAt,
     });
     const origin = (env.webOrigin || `${req.protocol}://${req.get('host')}`).split(',')[0].trim();
-    const redirectUrl = `${origin}/payment/return?order=${encodeURIComponent(order.id)}`;
-    const invoiceResponse = await mayar.createInvoice({ order, user: req.user, redirectUrl });
-    const invoice = invoiceResponse?.data;
-    if (!invoice?.link || !invoice?.transactionId || !invoice?.id) {
-      throw Object.assign(new Error('Mayar returned an incomplete invoice response'), { status: 502 });
+    const returnUrl = `${origin}/payment/return?order=${encodeURIComponent(order.id)}`;
+    const cancelUrl = `${origin}/payment/failed?order=${encodeURIComponent(order.id)}`;
+    const notifyUrl = `${env.apiPublicUrl}/api/payments/ipaymu/webhook`;
+    const paymentResponse = await ipaymu.createTokenPayment({
+      order,
+      user: req.user,
+      returnUrl,
+      cancelUrl,
+      notifyUrl,
+    });
+    const data = paymentResponse?.Data;
+    if (!data?.Url || !data?.SessionID) {
+      throw Object.assign(new Error('iPaymu returned an incomplete payment response'), { status: 502 });
     }
 
     await order.update({
-      mayarInvoiceId: invoice.id,
-      mayarTransactionId: invoice.transactionId,
-      paymentUrl: invoice.link,
-      ...(invoice.expiredAt ? { expiresAt: new Date(invoice.expiredAt) } : {}),
+      ipaymuSessionId: String(data.SessionID),
+      paymentUrl: data.Url,
     });
     return res.status(201).json({ order: serializeOrder(order) });
   } catch (error) {
-    if (order && !order.mayarTransactionId) {
+    if (order && !order.ipaymuSessionId) {
       await order.update({ status: 'failed' }).catch(() => {});
     }
     return next(error);
@@ -119,7 +141,8 @@ async function verify(req, res, next) {
   try {
     let order = await TokenOrder.findOne({ where: { id: req.params.id, userId: req.user.id } });
     if (!order) return res.status(404).json({ error: 'Token order not found' });
-    order = await verifyMayarTransaction(order);
+    const candidateTrxId = req.body?.trx_id || req.body?.transactionId || req.query?.trx_id || null;
+    order = await verifyIpaymuTransaction(order, candidateTrxId);
     return res.json({ order: serializeOrder(order) });
   } catch (error) {
     return next(error);
@@ -129,16 +152,29 @@ async function verify(req, res, next) {
 async function webhook(req, res, next) {
   try {
     const payload = req.body || {};
-    const event = payload.event;
-    const data = payload.data || {};
-    const transactionId = data.transactionId || data.id;
-    if (event !== 'payment.received' || !transactionId) {
+    if (!ipaymu.isValidWebhook(payload, req.get('x-signature'))) {
+      return res.status(401).json({ error: 'Invalid iPaymu webhook signature' });
+    }
+
+    const trxId = payload.trx_id ? String(payload.trx_id).trim() : '';
+    const referenceId = payload.reference_id ? String(payload.reference_id).trim() : '';
+    const sid = payload.sid ? String(payload.sid).trim() : '';
+    if (!trxId && !referenceId && !sid) {
       return res.status(200).json({ received: true, ignored: true });
     }
 
-    const order = await TokenOrder.findOne({ where: { mayarTransactionId: transactionId } });
-    if (!order) return ppobController.mayarWebhook(req, res, next);
-    await verifyMayarTransaction(order);
+    const lookupConditions = [];
+    if (referenceId) lookupConditions.push({ id: referenceId });
+    if (sid) lookupConditions.push({ ipaymuSessionId: sid });
+    if (trxId) lookupConditions.push({ ipaymuTransactionId: trxId });
+
+    const order = await TokenOrder.findOne({ where: { [Op.or]: lookupConditions } });
+    if (!order) return ppobController.ipaymuWebhook(req, res, next);
+    try {
+      await verifyIpaymuTransaction(order, trxId);
+    } catch (error) {
+      console.error(`Unable to verify iPaymu token order ${order.id}:`, error.message);
+    }
     return res.status(200).json({ received: true });
   } catch (error) {
     return next(error);

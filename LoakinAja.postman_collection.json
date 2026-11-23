@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "6a8ea34b-3f0d-40b3-9b4a-25de6acef271",
     "name": "LoakinAja API",
-    "description": "Runnable requests for the LoakinAja Express API. Set baseUrl to the API origin (default http://localhost:4000). Login/register requests save their bearer tokens automatically. Configure the external Mayar and Digiflazz integrations before using payment and PPOB requests.",
+    "description": "Runnable requests for the LoakinAja Express API. Set baseUrl to the API origin (default http://localhost:4000). Login/register requests save their bearer tokens automatically. Configure the external iPaymu and Digiflazz integrations before using payment and PPOB requests.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -93,7 +93,7 @@
         {
           "name": "Create token order",
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const body = pm.response.json();", "if (body.order && body.order.id) pm.collectionVariables.set('tokenOrderId', body.order.id);"] } }],
-          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] }, "body": { "mode": "raw", "raw": "{\n  \"packageId\": \"starter\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/api/token-orders", "description": "Valid packageId values: starter, popular, pro. Requires Mayar configuration; saves the returned order id." }
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] }, "body": { "mode": "raw", "raw": "{\n  \"packageId\": \"starter\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/api/token-orders", "description": "Valid packageId values: starter, popular, pro. Requires iPaymu configuration; saves the returned order id." }
         },
         {
           "name": "Get token order",
@@ -101,11 +101,11 @@
         },
         {
           "name": "Verify token order payment",
-          "request": { "method": "POST", "header": [], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] }, "url": "{{baseUrl}}/api/token-orders/{{tokenOrderId}}/verify", "description": "Checks the transaction with Mayar and credits tokens only after a confirmed paid status." }
+          "request": { "method": "POST", "header": [], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] }, "url": "{{baseUrl}}/api/token-orders/{{tokenOrderId}}/verify", "description": "Checks the transaction with iPaymu and credits tokens only after a confirmed paid status." }
         },
         {
-          "name": "Mayar payment webhook (manual sample)",
-          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"event\": \"payment.received\",\n  \"data\": {\n    \"transactionId\": \"replace-with-mayar-transaction-id\"\n  }\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/api/payments/mayar/webhook", "description": "For actual settlement, use Mayar's signed/configured webhook delivery; a manual request does not prove payment." }
+          "name": "iPaymu payment webhook (manual sample)",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-Signature", "value": "replace-with-hmac-sha256-signature" }], "body": { "mode": "raw", "raw": "{\n  \"trx_id\": 123456,\n  \"sid\": \"replace-with-session-id\",\n  \"reference_id\": \"{{tokenOrderId}}\",\n  \"status\": \"berhasil\",\n  \"status_code\": 1\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/api/payments/ipaymu/webhook", "description": "For actual settlement, use iPaymu's signed webhook delivery; a manual request without a valid X-Signature will be rejected." }
         }
       ]
     },
@@ -140,11 +140,11 @@
         },
         {
           "name": "Create payment for PPOB order",
-          "request": { "method": "POST", "header": [], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] }, "url": "{{baseUrl}}/api/ppob/orders/{{ppobOrderId}}/payment", "description": "Requires a valid unexpired quote and Mayar configuration." }
+          "request": { "method": "POST", "header": [], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] }, "url": "{{baseUrl}}/api/ppob/orders/{{ppobOrderId}}/payment", "description": "Requires a valid unexpired quote and iPaymu configuration." }
         },
         {
           "name": "Verify PPOB payment and provider status",
-          "request": { "method": "POST", "header": [], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] }, "url": "{{baseUrl}}/api/ppob/orders/{{ppobOrderId}}/verify-payment", "description": "May verify payment with Mayar and submit/check the Digiflazz transaction." }
+          "request": { "method": "POST", "header": [], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] }, "url": "{{baseUrl}}/api/ppob/orders/{{ppobOrderId}}/verify-payment", "description": "May verify payment with iPaymu and submit/check the Digiflazz transaction." }
         },
         {
           "name": "Get guest PPOB order",

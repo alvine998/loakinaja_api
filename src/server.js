@@ -10,6 +10,7 @@ const { ensureProfilePhotoSchema } = require('../scripts/lib/profilePhotoMigrati
 const { ensurePpobSettingsSchema } = require('../scripts/lib/ppobSettingsMigration');
 const { ensureCategories } = require('../scripts/lib/categoriesMigration');
 const { ensureEscrowSalesSchema } = require('../scripts/lib/escrowSalesMigration');
+const { ensureIpaymuSchema } = require('../scripts/lib/ipaymuMigration');
 const ppobCatalog = require('./services/ppobCatalog');
 const redis = require('./services/redis');
 
@@ -19,6 +20,7 @@ async function start() {
   // Bring existing PPOB tables up to the guest-compatible schema before sync
   // evaluates model foreign keys and attempts any column alterations.
   await ensurePpobGuestSchema(sequelize);
+  await ensureIpaymuSchema(sequelize);
   // Creates missing tables for a fresh install. Use migrations for production schema changes.
   await sequelize.sync();
   await ensureEscrowSalesSchema(sequelize);
