@@ -2,9 +2,18 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 
+function parseTrustProxy(value) {
+  if (value === undefined || value === '') return 1;
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  const num = Number(value);
+  return Number.isInteger(num) && num >= 0 ? num : value;
+}
+
 const env = {
   nodeEnv: process.env.NODE_ENV || 'development',
   port: Number(process.env.PORT) || 4000,
+  trustProxy: parseTrustProxy(process.env.TRUST_PROXY),
   webOrigin: process.env.WEB_ORIGIN || 'http://localhost:3000',
   apiPublicUrl: (process.env.API_PUBLIC_URL || `http://localhost:${Number(process.env.PORT) || 4000}`).replace(/\/$/, ''),
   google: {

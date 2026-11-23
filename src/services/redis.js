@@ -5,6 +5,13 @@ let client;
 let connecting;
 let disabled = false;
 
+function destroyClient(target) {
+  if (!target?.isOpen) return;
+  try {
+    target.destroy();
+  } catch {}
+}
+
 async function getClient() {
   if (!env.redis.url || disabled) return null;
   if (client?.isReady) return client;
@@ -32,7 +39,7 @@ async function getClient() {
     .catch((error) => {
       console.error('Could not connect to Redis; using database cache fallback:', error.message);
       disabled = true;
-      client?.destroy();
+      destroyClient(client);
       client = null;
       return null;
     })
@@ -41,7 +48,9 @@ async function getClient() {
 }
 
 async function close() {
-  if (client?.isOpen) await client.quit().catch(() => client?.destroy());
+  if (client?.isOpen) {
+    await client.quit().catch(() => destroyClient(client));
+  }
   client = null;
   connecting = null;
 }
